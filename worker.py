@@ -5,7 +5,7 @@ class Worker(QThread):
         super().__init__()
 
     def get_data(feature, label, weight, learning_rate, training_times):
+        # get data and compute weight
         
-        
-
     def run(self):
+        # call get_data again and again
