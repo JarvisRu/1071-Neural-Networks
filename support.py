@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
+from copy import deepcopy
 import random
-import numpy as np
 import os
 
 def find_all_dataset():
@@ -49,6 +49,58 @@ def get_seperate_points(feature, label, individual_label):
             label2_x2.append(float(x2))
     return label1_x1, label1_x2, label2_x1, label2_x2
 
+def split_train_test_data(feature, label, pro):
+    propotion = (int)(pro * len(label))
+    feature_train, label_train = deepcopy(feature), deepcopy(label)
+    feature_test = [[], []]
+    label_test = []
+    num = 0
+    start = random.randint(0, len(label))
+    while(num < propotion):
+        # get index randomly
+        add = random.randint(0,5)
+        tmp = (start + add) % len(label_train)
+        start = tmp
+        # do split 
+        feature_test[0].append(feature_train[0][tmp])
+        del feature_train[0][tmp]
+        feature_test[1].append(feature_train[1][tmp])
+        del feature_train[1][tmp]
+        label_test.append(label_train[tmp])
+        del label_train[tmp]
+        num += 1
+    return feature_train, label_train, feature_test, label_test
+
+def do_training(feature, label, individual_label, weight, learning_rate, run_limit):
+    run = 0
+    converge = False
+    x0 = -1
+    while (not converge) and (run < run_limit):
+        converge = True
+        for x1, x2, expected_ans in zip(feature[0], feature[1], label):
+            tmp = weight[0] * x0 + weight[1] * x1 + weight[2] * x2
+            tmp_ans = individual_label[1] if tmp > 0 else individual_label[0]
+            if tmp_ans != expected_ans:
+                arg = -1 if (tmp_ans > expected_ans) else 1
+                weight[0] = weight[0] + arg * learning_rate * x0 
+                weight[1] = weight[1] + arg * learning_rate * x1
+                weight[2] = weight[2] + arg * learning_rate * x2
+                converge = False
+                run += 1
+                break
+    print(weight[0], weight[1], weight[2])
+    return weight, run
+
+
+def get_recognition(feature, label, weight, individual_label):
+    total_num = len(label)
+    error_num = 0
+    for x1, x2, expected_ans in zip(feature[0], feature[1], label):
+        tmp = weight[0] * -1 + weight[1] * x1 + weight[2] * x2
+        tmp_ans = individual_label[1] if tmp > 0 else individual_label[0]
+        if tmp_ans != expected_ans:
+            error_num += 1
+    return float((total_num - error_num) / total_num) * 100
 
 # old code
 def old():

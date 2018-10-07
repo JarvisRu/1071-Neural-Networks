@@ -135,6 +135,7 @@ class Preceptron(QWidget):
         self.start_testing_btn = QPushButton("Start Testing")
         self.start_testing_btn.setStatusTip('Testing remaining dataset with weight which get from training.')
         self.start_testing_btn.setEnabled(False)
+        self.start_testing_btn.clicked.connect(self.start_testing)
 
         start_box.addWidget(self.redo_btn, 2)
         start_box.addWidget(self.start_training_btn, 2)
@@ -149,6 +150,7 @@ class Preceptron(QWidget):
         vbox = QVBoxLayout()
         weight_box = QHBoxLayout()
         initalize_box = QHBoxLayout()
+        split_box = QHBoxLayout()
 
         weight_label = QLabel("Initalize the weight with Value :")
         weight_label.setAlignment(Qt.AlignCenter)
@@ -176,9 +178,18 @@ class Preceptron(QWidget):
         self.training_times_text.setStatusTip('Using training times as converge condition')
         initalize_box.addWidget(training_times_label, 2)
         initalize_box.addWidget(self.training_times_text, 2)
+
+        propotion_of_test_label = QLabel("Propotion of testing data (%) :")
+        propotion_of_test_label.setAlignment(Qt.AlignCenter)
+        self.propotion_of_test_text = QLineEdit()
+        self.propotion_of_test_text.setStatusTip('testing_data / all_data = ?')
+        split_box.addWidget(propotion_of_test_label, 3)
+        split_box.addWidget(self.propotion_of_test_text, 3)
+        split_box.addStretch(1)
     
         vbox.addLayout(weight_box)
         vbox.addLayout(initalize_box)
+        vbox.addLayout(split_box)
         self.__setting_box.setLayout(vbox)
 
     def __set_figure_box_UI(self):
@@ -213,14 +224,14 @@ class Preceptron(QWidget):
         tranining_times_result_box.addWidget(training_times_result_label, 3)
         tranining_times_result_box.addWidget(self.training_times_result_text, 2)
 
-        training_result_label = QLabel("Recognition rate of training : ")
+        training_result_label = QLabel("Recognition rate of training (%) : ")
         training_result_label.setAlignment(Qt.AlignCenter)
         self.training_result_text = QLabel(" -- ")
         self.training_result_text.setAlignment(Qt.AlignCenter)
         training_result_box.addWidget(training_result_label, 3)
         training_result_box.addWidget(self.training_result_text, 2)
 
-        testing_result_label = QLabel("Recognition rate of testing")
+        testing_result_label = QLabel("Recognition rate of testing (%) : ")
         testing_result_label.setAlignment(Qt.AlignCenter)
         self.testing_result_text = QLabel(" -- ")
         self.testing_result_text.setAlignment(Qt.AlignCenter)
@@ -238,75 +249,126 @@ class Preceptron(QWidget):
         self.file_name = str(self.file_cb.currentText())
         self.feature, self.label = support.load_file_info(self.file_name)
         self.individual_label = support.get_individual_label(self.label)
-        self.reset_weight_btn.setEnabled(True)
-        self.confirm_btn.setEnabled(True)
-        self.learning_rate_text.clear()
-        self.training_times_text.clear()
         self.update_file_info()
         self.update_initial_weight()
         self.draw_points("all")
+        # set GUI
+        self.reset_weight_btn.setEnabled(True)
+        self.confirm_btn.setEnabled(True)
+        self.load_training_data_btn.setEnabled(False)
+        self.load_testing_data_btn.setEnabled(False)
+        self.start_training_btn.setEnabled(False)
+        self.start_testing_btn.setEnabled(False)
+        self.redo_btn.setEnabled(False)
+        self.learning_rate_text.setText("0.8")
+        self.training_times_text.setText("100")
+        self.propotion_of_test_text.setText("33")
+        self.reset_result_text()
 
     @pyqtSlot()
     def update_initial_weight(self):
         self.weight = [-1]
-        weight_text = " -1 "
         for i in range(self.dimension):
-            rand_num = float(support.get_random_weight())
+            rand_num = round(float(support.get_random_weight()), 3)
             self.weight.append(rand_num)
-            weight_text = weight_text + " " + str(rand_num) + " "
-        self.initial_weight.setText(weight_text)
+        self.initial_weight.setText(str(self.weight))
     
     @pyqtSlot()
     def confirm_data(self):
         if(self.learning_rate_text.text() == ""):
             self.learning_rate_text.setText("0.8")
         if(self.training_times_text.text() == ""):
-            self.training_times_text.setText("300")
+            self.training_times_text.setText("100")
+        if(self.propotion_of_test_text.text() == ""):
+            self.propotion_of_test_text.setText("33")
         self.learning_rate = float(self.learning_rate_text.text())
         self.training_times = int(self.training_times_text.text())
+        self.pro_of_test = float(int(self.propotion_of_test_text.text())/100)
+        self.split_train_test_data()
+        # set GUI
         self.load_training_data_btn.setEnabled(True)
         self.confirm_btn.setEnabled(False)
+        self.reset_weight_btn.setEnabled(False)
+        self.reset_result_text()
     
     @pyqtSlot()
     def load_training(self):
-        self.load_training_data_btn.setEnabled(True)
+        self.draw_points("training")
+        # set GUI
+        self.load_training_data_btn.setEnabled(False)
         self.start_training_btn.setEnabled(True)
-    
     
     @pyqtSlot()
     def load_testing(self):
+        self.draw_points("testing")
+        # set GUI
+        self.load_testing_data_btn.setEnabled(False)
+        self.start_training_btn.setEnabled(False)
+        self.redo_btn.setEnabled(False)
         self.load_testing_data_btn.setEnabled(True)
         self.start_testing_btn.setEnabled(True)
 
-
     @pyqtSlot()
     def start_training(self):
-        self.draw_points("training")
-        plt.ion()
-        # ???
-        plt.ioff()
-        self.canvas.draw()
+        # plot line
+        # plt.ion()
+        # # ???
+        # plt.ioff()
+        # self.canvas.draw()
+        self.weight_result, self.training_times_result = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times)
+        self.recog_train = support.get_recognition(self.feature_train, self.label_train, self.weight_result, self.individual_label)
+        weight_res = [ round(w,3) for w in self.weight]
+        # set GUI
+        self.weight_result_text.setText(str(weight_res))
+        self.training_result_text.setText(str(self.recog_train))
+        self.training_times_result_text.setText(str(self.training_times_result))
         self.load_testing_data_btn.setEnabled(True)
         self.redo_btn.setEnabled(True)
     
     @pyqtSlot()
+    def start_testing(self):
+        # plot line
+
+        # get recognition
+        self.recog_test = support.get_recognition(self.feature_test, self.label_test, self.weight_result, self.individual_label)
+        self.testing_result_text.setText(str(self.recog_test))
+        # set GUI
+        self.reset_weight_btn.setEnabled(True)
+        self.confirm_btn.setEnabled(True)
+        self.load_training_data_btn.setEnabled(False)
+        self.load_testing_data_btn.setEnabled(False)
+        self.start_training_btn.setEnabled(False)
+        self.start_testing_btn.setEnabled(False)
+        self.redo_btn.setEnabled(False)
+    
+    @pyqtSlot()
     def redo(self):
+        # set GUI
+        self.confirm_btn.setEnabled(True)
         self.load_training_data_btn.setEnabled(False)
         self.start_training_btn.setEnabled(False)
         self.load_testing_data_btn.setEnabled(False)
         self.start_testing_btn.setEnabled(False)
         self.redo_btn.setEnabled(False)
+        self.reset_weight_btn.setEnabled(True)
+        self.training_result_text.setText(" -- ")
+        self.training_times_result_text.setText(" -- ")
+        self.weight_result_text.setText(" -- ")
         self.learning_rate_text.clear()
         self.training_times_text.clear()
-
+        self.propotion_of_test_text.clear()
 
     def update_file_info(self):
         self.dimension = len(self.feature)
         self.name_text.setText(self.file_name)
+        # set GUI
         self.number_of_feature_text.setText(str(self.dimension))
         self.number_of_class_text.setText(str(len(self.individual_label)))
         self.number_of_instances_text.setText(str(len(self.label)))
 
+    def split_train_test_data(self):
+        self.feature_train, self.label_train, self.feature_test, self.label_test = support.split_train_test_data(self.feature, self.label, self.pro_of_test)
+        
     def draw_points(self, mode):
         self.ax.clear()
         if(mode == "all"):
@@ -318,19 +380,27 @@ class Preceptron(QWidget):
             self.ax.scatter(label2_x1, label2_x2, c='green' , s=15)
             self.canvas.draw()
         elif(mode == "training"):
-            label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature, self.label, self.individual_label)
+            label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature_train, self.label_train, self.individual_label)
             self.ax.set_title("Training data")
-            self.ax.set_xlim(min(self.feature[0])-0.5, max(self.feature[0])+0.5)
-            self.ax.set_ylim(min(self.feature[1])-0.5, max(self.feature[1])+0.5)
+            self.ax.set_xlim(min(self.feature_train[0])-0.5, max(self.feature_train[0])+0.5)
+            self.ax.set_ylim(min(self.feature_train[1])-0.5, max(self.feature_train[1])+0.5)
             self.ax.scatter(label1_x1, label1_x2, c='blue' , s=15)
             self.ax.scatter(label2_x1, label2_x2, c='green' , s=15)
+            self.canvas.draw()
         elif(mode == "testing"):
-            label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature, self.label, self.individual_label)
-            self.ax.set_title("Training data")
-            self.ax.set_xlim(min(self.feature[0])-0.5, max(self.feature[0])+0.5)
-            self.ax.set_ylim(min(self.feature[1])-0.5, max(self.feature[1])+0.5)
+            label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature_test, self.label_test, self.individual_label)
+            self.ax.set_title("Testing data")
+            self.ax.set_xlim(min(self.feature_test[0])-0.5, max(self.feature_test[0])+0.5)
+            self.ax.set_ylim(min(self.feature_test[1])-0.5, max(self.feature_test[1])+0.5)
             self.ax.scatter(label1_x1, label1_x2, c='blue' , s=15)
             self.ax.scatter(label2_x1, label2_x2, c='green' , s=15)
+            self.canvas.draw()
+
+    def reset_result_text(self):
+        self.weight_result_text.setText(" -- ")
+        self.training_result_text.setText(" -- ")
+        self.testing_result_text.setText(" -- ")
+        self.training_times_result_text.setText(" -- ")
 
 
 class BaseWindow(QMainWindow):
