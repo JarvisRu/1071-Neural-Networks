@@ -71,10 +71,12 @@ def split_train_test_data(feature, label, pro):
         num += 1
     return feature_train, label_train, feature_test, label_test
 
-def do_training(feature, label, individual_label, weight, learning_rate, run_limit):
+def do_training(feature, label, individual_label, weight, learning_rate, run_limit, canvas, ax):
+    min_x1, max_x1 = min(feature[0])-0.5, max(feature[0])+0.5
     run = 0
     converge = False
     x0 = -1
+    plt.ion()
     while (not converge) and (run < run_limit):
         converge = True
         for x1, x2, expected_ans in zip(feature[0], feature[1], label):
@@ -87,8 +89,20 @@ def do_training(feature, label, individual_label, weight, learning_rate, run_lim
                 weight[2] = weight[2] + arg * learning_rate * x2
                 converge = False
                 run += 1
+                # draw the line
+                if run % 5 == 0:
+                    print("draw!!")
+                    try:
+                        ax.lines.pop(0)
+                    except Exception:
+                        pass
+                    lines = ax.plot([min_x1, max_x1], [find_x2(weight[0], weight[1], weight[2], min_x1), find_x2(weight[0], weight[1], weight[2], max_x1)], color='orange', linewidth=2)
+                    canvas.draw()
+                    plt.pause(0.5)
                 break
-    print(weight[0], weight[1], weight[2])
+    plt.ioff()
+    plt.show()
+    # print(weight[0], weight[1], weight[2])
     return weight, run
 
 
@@ -100,7 +114,7 @@ def get_recognition(feature, label, weight, individual_label):
         tmp_ans = individual_label[1] if tmp > 0 else individual_label[0]
         if tmp_ans != expected_ans:
             error_num += 1
-    return float((total_num - error_num) / total_num) * 100
+    return round(float((total_num - error_num) / total_num) * 100, 3)
 
 # old code
 def old():

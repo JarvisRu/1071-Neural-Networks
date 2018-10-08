@@ -97,6 +97,53 @@ class Preceptron(QWidget):
         vbox.addLayout(number_of_class_box)
         self.__dataInfo_box.setLayout(vbox)
         
+    def __set_setting_box_UI(self):
+        self.__setting_box = QGroupBox('Setting')
+        vbox = QVBoxLayout()
+        weight_box = QHBoxLayout()
+        initalize_box = QHBoxLayout()
+        split_box = QHBoxLayout()
+
+        weight_label = QLabel("Initalize the weight with Value :")
+        weight_label.setAlignment(Qt.AlignCenter)
+        self.initial_weight = QLabel("--")
+        self.initial_weight.setAlignment(Qt.AlignCenter)
+        self.reset_weight_btn = QPushButton("Reset weight")
+        self.reset_weight_btn.setEnabled(False)
+        self.reset_weight_btn.setStatusTip('Reset initial weight with value from -1 to 1')
+        self.reset_weight_btn.clicked.connect(self.update_initial_weight)
+        weight_box.addWidget(weight_label,3)
+        weight_box.addWidget(self.initial_weight,3)
+        weight_box.addWidget(self.reset_weight_btn,1)
+
+        learning_rate_label = QLabel("Learning Rate :")
+        learning_rate_label.setAlignment(Qt.AlignCenter)
+        self.learning_rate_text = QLineEdit()
+        self.learning_rate_text.setStatusTip('The learning rate of training')
+        initalize_box.addWidget(learning_rate_label, 2)
+        initalize_box.addWidget(self.learning_rate_text, 2)
+        initalize_box.addStretch(1)
+
+        training_times_label = QLabel("Maximum Training Times :")
+        training_times_label.setAlignment(Qt.AlignCenter)
+        self.training_times_text = QLineEdit()
+        self.training_times_text.setStatusTip('Using training times as converge condition')
+        initalize_box.addWidget(training_times_label, 2)
+        initalize_box.addWidget(self.training_times_text, 2)
+
+        propotion_of_test_label = QLabel("Propotion of Testing Data (%) :")
+        propotion_of_test_label.setAlignment(Qt.AlignCenter)
+        self.propotion_of_test_text = QLineEdit()
+        self.propotion_of_test_text.setStatusTip('testing_data / all_data = ?')
+        split_box.addWidget(propotion_of_test_label, 3)
+        split_box.addWidget(self.propotion_of_test_text, 3)
+        split_box.addStretch(1)
+    
+        vbox.addLayout(weight_box)
+        vbox.addLayout(initalize_box)
+        vbox.addLayout(split_box)
+        self.__setting_box.setLayout(vbox)
+        
     def __set_control_box_UI(self):
         self.__control_box = QGroupBox('Control Panel')
         vbox = QVBoxLayout()
@@ -104,17 +151,17 @@ class Preceptron(QWidget):
         start_box = QHBoxLayout()
 
         self.confirm_btn = QPushButton("Confirm")
-        self.confirm_btn.setStatusTip('Confirm to use : Initial weight | Learning rate | Training times')
+        self.confirm_btn.setStatusTip('Confirm to use : initial weight,  learning rate, maximum training times, propotion of testing data')
         self.confirm_btn.setEnabled(False)
         self.confirm_btn.clicked.connect(self.confirm_data)
 
         self.load_training_data_btn = QPushButton("Load training data")
-        self.load_training_data_btn.setStatusTip('Randomly Split dataset into 3 part, 2 of them as training data.')
+        self.load_training_data_btn.setStatusTip('Randomly Split dataset into training part and testing part. Load training data and draw it.')
         self.load_training_data_btn.setEnabled(False)
         self.load_training_data_btn.clicked.connect(self.load_training)
 
         self.load_testing_data_btn = QPushButton("Load testing data")
-        self.load_testing_data_btn.setStatusTip('Randomly Split dataset into 3 part, 1 of them as testing data.')
+        self.load_testing_data_btn.setStatusTip('Randomly Split dataset into training part and testing part. Load testing data and draw it.')
         self.load_testing_data_btn.setEnabled(False)
         self.load_testing_data_btn.clicked.connect(self.load_testing)
 
@@ -144,53 +191,6 @@ class Preceptron(QWidget):
         vbox.addLayout(control_box)
         vbox.addLayout(start_box)
         self.__control_box.setLayout(vbox)
-
-    def __set_setting_box_UI(self):
-        self.__setting_box = QGroupBox('Setting')
-        vbox = QVBoxLayout()
-        weight_box = QHBoxLayout()
-        initalize_box = QHBoxLayout()
-        split_box = QHBoxLayout()
-
-        weight_label = QLabel("Initalize the weight with Value :")
-        weight_label.setAlignment(Qt.AlignCenter)
-        self.initial_weight = QLabel("--")
-        self.initial_weight.setAlignment(Qt.AlignCenter)
-        self.reset_weight_btn = QPushButton("Reset weight")
-        self.reset_weight_btn.setEnabled(False)
-        self.reset_weight_btn.setStatusTip('Reset initial weight with value from -1 to 1')
-        self.reset_weight_btn.clicked.connect(self.update_initial_weight)
-        weight_box.addWidget(weight_label,3)
-        weight_box.addWidget(self.initial_weight,3)
-        weight_box.addWidget(self.reset_weight_btn,1)
-
-        learning_rate_label = QLabel("Learning Rate :")
-        learning_rate_label.setAlignment(Qt.AlignCenter)
-        self.learning_rate_text = QLineEdit()
-        self.learning_rate_text.setStatusTip('The learning rate of training')
-        initalize_box.addWidget(learning_rate_label, 2)
-        initalize_box.addWidget(self.learning_rate_text, 2)
-        initalize_box.addStretch(1)
-
-        training_times_label = QLabel("Training times :")
-        training_times_label.setAlignment(Qt.AlignCenter)
-        self.training_times_text = QLineEdit()
-        self.training_times_text.setStatusTip('Using training times as converge condition')
-        initalize_box.addWidget(training_times_label, 2)
-        initalize_box.addWidget(self.training_times_text, 2)
-
-        propotion_of_test_label = QLabel("Propotion of testing data (%) :")
-        propotion_of_test_label.setAlignment(Qt.AlignCenter)
-        self.propotion_of_test_text = QLineEdit()
-        self.propotion_of_test_text.setStatusTip('testing_data / all_data = ?')
-        split_box.addWidget(propotion_of_test_label, 3)
-        split_box.addWidget(self.propotion_of_test_text, 3)
-        split_box.addStretch(1)
-    
-        vbox.addLayout(weight_box)
-        vbox.addLayout(initalize_box)
-        vbox.addLayout(split_box)
-        self.__setting_box.setLayout(vbox)
 
     def __set_figure_box_UI(self):
         self.__figure_box = QGroupBox('Figure')
@@ -263,6 +263,7 @@ class Preceptron(QWidget):
         self.learning_rate_text.setText("0.8")
         self.training_times_text.setText("100")
         self.propotion_of_test_text.setText("33")
+        self.confirm_btn.setText("Confirm")
         self.reset_result_text()
 
     @pyqtSlot()
@@ -310,12 +311,11 @@ class Preceptron(QWidget):
 
     @pyqtSlot()
     def start_training(self):
-        # plot line
         # plt.ion()
-        # # ???
-        # plt.ioff()
         # self.canvas.draw()
-        self.weight_result, self.training_times_result = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times)
+        self.weight_result, self.training_times_result = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times, self.canvas, self.ax)
+        # plt.ioff()
+        # plt.show()
         self.recog_train = support.get_recognition(self.feature_train, self.label_train, self.weight_result, self.individual_label)
         weight_res = [ round(w,3) for w in self.weight]
         # set GUI
@@ -328,13 +328,16 @@ class Preceptron(QWidget):
     @pyqtSlot()
     def start_testing(self):
         # plot line
-
+        min_x1, max_x1 = min(self.feature[0])-0.5, max(self.feature[0])+0.5
+        self.ax.plot([min_x1, max_x1], [support.find_x2(self.weight[0], self.weight[1], self.weight[2], min_x1), support.find_x2(self.weight[0], self.weight[1], self.weight[2], max_x1)], color='orange', linewidth=2)
+        self.canvas.draw()
         # get recognition
         self.recog_test = support.get_recognition(self.feature_test, self.label_test, self.weight_result, self.individual_label)
         self.testing_result_text.setText(str(self.recog_test))
         # set GUI
         self.reset_weight_btn.setEnabled(True)
         self.confirm_btn.setEnabled(True)
+        self.confirm_btn.setText("Redo Again")
         self.load_training_data_btn.setEnabled(False)
         self.load_testing_data_btn.setEnabled(False)
         self.start_training_btn.setEnabled(False)
@@ -414,28 +417,28 @@ class BaseWindow(QMainWindow):
 
 
 
-class Drawer(QThread):
-    def __init__(self, canvas, ax):
-        super().__init__()
-        self.canvas = canvas
-        self.ax = ax
+# class Drawer(QThread):
+#     def __init__(self, canvas, ax):
+#         super().__init__()
+#         self.canvas = canvas
+#         self.ax = ax
 
-    # def set_data(feature, label, weight, learning_rate, training_times):
-    #     # get data and compute weight
+#     # def set_data(feature, label, weight, learning_rate, training_times):
+#     #     # get data and compute weight
 
-    # def compute_weight_and_draw():
-    #     # compute    
+#     # def compute_weight_and_draw():
+#     #     # compute    
     
-    def run(self):
-        # call compute.. again and again
-        self.ax.scatter([0,1], [1,2], c='blue' , s=25)
-        self.ax.scatter([2,3], [4,5], c='green' , s=25)
-        # self.canvas.draw()
+#     def run(self):
+#         # call compute.. again and again
+#         self.ax.scatter([0,1], [1,2], c='blue' , s=25)
+#         self.ax.scatter([2,3], [4,5], c='green' , s=25)
+#         # self.canvas.draw()
 
 
 if __name__ == '__main__':
+    sys.argv.append("--style=fusion")
     app = QApplication(sys.argv)
-
     w = BaseWindow()
     w.show()   
     sys.exit(app.exec_())
