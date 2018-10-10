@@ -1,7 +1,8 @@
 import support
 import sys
+import time
 import matplotlib.pyplot as plt
-from PyQt5.QtCore import Qt, pyqtSlot, QThread
+from PyQt5.QtCore import Qt, pyqtSlot, QThread, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QComboBox)
 from matplotlib.backends.backend_qt5agg import FigureCanvas 
 from matplotlib.figure import Figure
@@ -314,11 +315,14 @@ class Preceptron(QWidget):
 
     @pyqtSlot()
     def start_training(self):
-        # plt.ion()
-        # self.canvas.draw()
-        self.weight_result, self.training_times_result = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times, self.canvas, self.ax)
-        # plt.ioff()
-        # plt.show()
+        self.weight_result, self.training_times_result, proc_weight = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times, self.canvas, self.ax)
+        self.drawer = Drawer(self.canvas, self.ax, self.feature, proc_weight)
+        self.drawer.start()  
+        self.drawer.finish.connect(self.update_training_result)
+        self.start_training_btn.setEnabled(False)
+
+    @pyqtSlot()
+    def update_training_result(self):
         self.recog_train = support.get_recognition(self.feature_train, self.label_train, self.weight_result, self.individual_label)
         weight_res = [ round(w,3) for w in self.weight]
         # set GUI
@@ -327,7 +331,7 @@ class Preceptron(QWidget):
         self.training_times_result_text.setText(str(self.training_times_result))
         self.load_testing_data_btn.setEnabled(True)
         self.redo_btn.setEnabled(True)
-    
+
     @pyqtSlot()
     def start_testing(self):
         # plot line
@@ -408,6 +412,8 @@ class Preceptron(QWidget):
         self.testing_result_text.setText(" -- ")
         self.training_times_result_text.setText(" -- ")
 
+        
+
 
 class BaseWindow(QMainWindow):
     def __init__(self):
@@ -420,23 +426,31 @@ class BaseWindow(QMainWindow):
 
 
 
-# class Drawer(QThread):
-#     def __init__(self, canvas, ax):
-#         super().__init__()
-#         self.canvas = canvas
-#         self.ax = ax
+class Drawer(QThread):
+    finish = pyqtSignal()
 
-#     # def set_data(feature, label, weight, learning_rate, training_times):
-#     #     # get data and compute weight
-
-#     # def compute_weight_and_draw():
-#     #     # compute    
+    def __init__(self, canvas, ax, feature, weight):
+        super().__init__()
+        self.canvas = canvas
+        self.ax = ax
+        self.proc = weight
+        self.min_x1, self.max_x1 = min(feature[0])-0.5, max(feature[0])+0.5
     
-#     def run(self):
-#         # call compute.. again and again
-#         self.ax.scatter([0,1], [1,2], c='blue' , s=25)
-#         self.ax.scatter([2,3], [4,5], c='green' , s=25)
-#         # self.canvas.draw()
+    def run(self):
+        plt.ion()
+        while len(self.proc) != 0:
+            weight = self.proc[0]
+            try:
+                self.ax.lines.pop(0)
+            except Exception:
+                pass
+            lines = self.ax.plot([self.min_x1, self.max_x1], [support.find_x2(weight[0], weight[1], weight[2], self.min_x1), support.find_x2(weight[0], weight[1], weight[2], self.max_x1)], color='orange', linewidth=2)
+            self.canvas.draw()
+            plt.pause(0.3)
+            del self.proc[0]
+        plt.ioff()
+        plt.show()
+        self.finish.emit()
 
 
 if __name__ == '__main__':
