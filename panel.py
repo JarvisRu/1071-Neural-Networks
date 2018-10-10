@@ -2,7 +2,7 @@ import support
 import sys
 import matplotlib.pyplot as plt
 from PyQt5.QtCore import Qt, pyqtSlot, QThread
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox, QComboBox)
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QComboBox)
 from matplotlib.backends.backend_qt5agg import FigureCanvas 
 from matplotlib.figure import Figure
 
@@ -249,6 +249,9 @@ class Preceptron(QWidget):
         self.file_name = str(self.file_cb.currentText())
         self.feature, self.label = support.load_file_info(self.file_name)
         self.individual_label = support.get_individual_label(self.label)
+        if (len(self.individual_label) > 2):
+            QMessageBox.about(self, "Warning", "Exist more than 3 classes, treat them as class 2.")
+            self.label = support.handle_as_noise( self.label, self.individual_label)
         self.update_file_info()
         self.update_initial_weight()
         self.draw_points("all")

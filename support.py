@@ -29,6 +29,14 @@ def get_individual_label(label):
     individual_label.sort()
     return individual_label
 
+# treat all noise as class 2
+def handle_as_noise(label, individual_label):
+    for i in range(len(individual_label) - 2):
+        for l in label:
+            if(l == individual_label[i+2]):
+                l = individual_label[1]
+    return label
+
 def find_x2(w0, w1, w2, x1):
     return (w0-(w1*x1)) / w2
 
