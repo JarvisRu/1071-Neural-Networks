@@ -14,11 +14,19 @@ def find_all_dataset():
 
 def load_file_info(file_name):
     file = open("DataSet/"+file_name, "r")
-    feature = [[], []]
+    # using first line to get dimension
+    col = file.readline().strip().split(" ")
+    dim = len(col) - 1
+    feature = []
     label = []
+    for n in range(dim):
+        feature.append([])
+    for n in range(dim):
+        feature[n].append(float(col[n]))
+    label.append(int(col[-1]))
     for line in file:
         col = line.strip().split(" ")
-        for n in range(2):
+        for n in range(dim):
             feature[n].append(float(col[n]))
         label.append(int(col[-1]))
     file.close()
