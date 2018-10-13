@@ -422,7 +422,7 @@ class BaseWindow(QMainWindow):
         super().__init__()
         self.resize(750, 500)
         self.move(350,50)
-        self.setWindowTitle('Nerual Network Lab1 - Preceptron')
+        self.setWindowTitle('Neural Networks Lab1 - Preceptron')
         self.statusBar()
         self.setCentralWidget(Preceptron())
 
