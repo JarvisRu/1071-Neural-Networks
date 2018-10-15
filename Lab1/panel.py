@@ -317,7 +317,7 @@ class Preceptron(QWidget):
 
     @pyqtSlot()
     def start_training(self):
-        self.weight_result, self.training_times_result, proc_weight = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times, self.canvas, self.ax)
+        self.weight_result, self.training_times_result, proc_weight = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times)
         self.drawer = Drawer(self.canvas, self.ax, self.feature, proc_weight)
         self.drawer.start()  
         self.drawer.finish.connect(self.update_training_result)
@@ -447,7 +447,7 @@ class Drawer(QThread):
                 pass
             lines = self.ax.plot([self.min_x1, self.max_x1], [support.find_x2(weight[0], weight[1], weight[2], self.min_x1), support.find_x2(weight[0], weight[1], weight[2], self.max_x1)], color='orange', linewidth=2)
             self.canvas.draw()
-            plt.pause(0.3)
+            plt.pause(0.1)
             del self.proc[0]
         plt.ioff()
         plt.show()

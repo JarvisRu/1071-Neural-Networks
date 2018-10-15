@@ -88,7 +88,7 @@ def split_train_test_data(feature, label, pro):
         num += 1
     return feature_train, label_train, feature_test, label_test
 
-def do_training(feature, label, individual_label, weight, learning_rate, run_limit, canvas, ax):
+def do_training(feature, label, individual_label, weight, learning_rate, run_limit):
     run = 0
     converge = False
     x0 = -1
