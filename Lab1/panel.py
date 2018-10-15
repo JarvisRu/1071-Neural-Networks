@@ -388,24 +388,24 @@ class Preceptron(QWidget):
             self.ax.set_title("All data")
             self.ax.set_xlim(min(self.feature[0])-0.5, max(self.feature[0])+0.5)
             self.ax.set_ylim(min(self.feature[1])-0.5, max(self.feature[1])+0.5)
-            self.ax.scatter(label1_x1, label1_x2, c='blue' , s=15)
-            self.ax.scatter(label2_x1, label2_x2, c='green' , s=15)
+            self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
+            self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
             self.canvas.draw()
         elif(mode == "training"):
             label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature_train, self.label_train, self.individual_label)
             self.ax.set_title("Training data")
             self.ax.set_xlim(min(self.feature_train[0])-0.5, max(self.feature_train[0])+0.5)
             self.ax.set_ylim(min(self.feature_train[1])-0.5, max(self.feature_train[1])+0.5)
-            self.ax.scatter(label1_x1, label1_x2, c='blue' , s=15)
-            self.ax.scatter(label2_x1, label2_x2, c='green' , s=15)
+            self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
+            self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
             self.canvas.draw()
         elif(mode == "testing"):
             label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature_test, self.label_test, self.individual_label)
             self.ax.set_title("Testing data")
             self.ax.set_xlim(min(self.feature_test[0])-0.5, max(self.feature_test[0])+0.5)
             self.ax.set_ylim(min(self.feature_test[1])-0.5, max(self.feature_test[1])+0.5)
-            self.ax.scatter(label1_x1, label1_x2, c='blue' , s=15)
-            self.ax.scatter(label2_x1, label2_x2, c='green' , s=15)
+            self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
+            self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
             self.canvas.draw()
 
     def reset_result_text(self):
@@ -416,7 +416,7 @@ class Preceptron(QWidget):
 
         
 
-
+# Class as Base window, create Preceptron
 class BaseWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -426,8 +426,7 @@ class BaseWindow(QMainWindow):
         self.statusBar()
         self.setCentralWidget(Preceptron())
 
-
-
+# Class for drawing 
 class Drawer(QThread):
     finish = pyqtSignal()
 
