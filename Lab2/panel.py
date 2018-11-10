@@ -456,7 +456,7 @@ class MultiPerceptronView(QWidget):
         self.hiddden_perceptrons = []
         # for i in range(num):
         #     p = perceptron()
-        #     self.perceptorn += p
+        #     self.hiddden_perceptrons.append(p)
 
     def split_train_test_data(self):
         self.feature_train, self.label_train, self.feature_test, self.label_test = support.split_train_test_data(self.feature, self.label, self.pro_of_test)
