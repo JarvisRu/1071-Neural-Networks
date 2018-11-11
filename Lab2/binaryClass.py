@@ -71,7 +71,8 @@ def get_recognition(instances, label, hidden_pers, output_pers):
 
 if __name__ == '__main__':
 
-    file_name = "2Ccircle1.txt"
+    # file_name = "2Ccircle1.txt"
+    # file_name = "2CloseS.txt"
     # file_name = "test.txt"
     # file_name = "perceptron1.txt"
     file = open("DataSet/"+file_name, "r")
