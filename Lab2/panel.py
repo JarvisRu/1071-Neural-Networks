@@ -1,4 +1,5 @@
 import support
+import multiClassifier
 import sys
 import time
 import matplotlib.pyplot as plt
@@ -12,6 +13,7 @@ class MultiPerceptronView(QWidget):
     def __init__(self):
         super().__init__()
         self.__initUI()
+        self.classifier = multiClassifier.MultiClassifier()
 
     def __initUI(self):
         self.__window_layout = QHBoxLayout()
@@ -103,19 +105,19 @@ class MultiPerceptronView(QWidget):
         # entire setting_box
         vbox = QVBoxLayout()
         # individual section
-        perceptron_box = QHBoxLayout()
+        # perceptron_box = QHBoxLayout()
         learning_spilt_box = QHBoxLayout()
         converge_condition_box = QVBoxLayout()
         optimized_box = QVBoxLayout()
 
         # perceptorn section
-        num_Hperceptron_label = QLabel("Number of hidden perceptrons :")
-        self.num_Hperceptron_sbox = QSpinBox()
-        self.num_Hperceptron_sbox.setRange(2,10)
-        self.num_Hperceptron_sbox.setStatusTip('Setting number of hidden perceptrons as ...')
+        # num_Hperceptron_label = QLabel("Number of hidden perceptrons :")
+        # self.num_Hperceptron_sbox = QSpinBox()
+        # self.num_Hperceptron_sbox.setRange(2,10)
+        # self.num_Hperceptron_sbox.setStatusTip('Setting number of hidden perceptrons as ...')
 
-        perceptron_box.addWidget(num_Hperceptron_label,3)
-        perceptron_box.addWidget(self.num_Hperceptron_sbox,1)
+        # perceptron_box.addWidget(num_Hperceptron_label,3)
+        # perceptron_box.addWidget(self.num_Hperceptron_sbox,1)
 
         # learning rate & split section
         learning_rate_label = QLabel("Learning Rate :")
@@ -173,7 +175,7 @@ class MultiPerceptronView(QWidget):
         optimized_box.addLayout(option_hbox)
     
         # fit all layout in
-        vbox.addLayout(perceptron_box)
+        # vbox.addLayout(perceptron_box)
         vbox.addLayout(learning_spilt_box)
         vbox.addLayout(converge_condition_box)
         vbox.addLayout(optimized_box)
@@ -297,25 +299,27 @@ class MultiPerceptronView(QWidget):
         vbox.addLayout(testing_rmse_box)
         self.__result_box.setLayout(vbox)
 
+    # ------------------------------------------------------------------
     @pyqtSlot()
     def load_file(self):
         self.file_name = str(self.file_cb.currentText())
-        self.feature, self.label = support.load_file_info(self.file_name)
-        self.individual_label = support.get_individual_label(self.label)
-        if (len(self.feature) > 2):
-            QMessageBox.about(self, "Warning", "Exist more than 2 features, automatically ignore them.")
-        if (len(self.individual_label) > 2):
-            QMessageBox.about(self, "Warning", "Exist more than 3 classes, treat them as class 2.")
-            self.label = support.handle_as_noise( self.label, self.individual_label)
+        self.classifier.load_file_info(self.file_name)
+        # self.feature, self.label = support.load_file_info(self.file_name)
+        # self.individual_label = support.get_individual_label(self.label)
+        # if (len(self.feature) > 2):
+        #     QMessageBox.about(self, "Warning", "Exist more than 2 features, automatically ignore them.")
+        # if (len(self.individual_label) > 2):
+        #     QMessageBox.about(self, "Warning", "Exist more than 3 classes, treat them as class 2.")
+        #     self.label = support.handle_as_noise( self.label, self.individual_label)
         self.update_file_info()
         # self.update_initial_weight()
-        self.draw_points("all")
+        # self.draw_points("all")
 
         # setting panel
         self.learning_rate_text.setText("0.8")
         self.propotion_of_test_text.setText("33")
         self.training_times_cbox.setChecked(True)
-        self.training_times_text.setText("500")
+        self.training_times_text.setText("1000")
         self.recognition_cbox.setChecked(False)
         self.pocket_cbox.setChecked(False)
         self.momentum_cbox.setChecked(False)
@@ -328,43 +332,48 @@ class MultiPerceptronView(QWidget):
         self.start_testing_btn.setEnabled(False)
         self.redo_btn.setEnabled(False)
         self.reset_result_text()
-
-    @pyqtSlot()
-    def update_initial_weight(self):
-        self.weight = [-1]
-        for i in range(self.dimension):
-            rand_num = round(float(support.get_random_weight()), 3)
-            self.weight.append(rand_num)
     
     @pyqtSlot()
     def confirm_data(self):
         # check status
-        if (self.learning_rate_text.text() == ""):
+        if self.learning_rate_text.text() == "":
             self.learning_rate_text.setText("0.8")
-        if (self.propotion_of_test_text.text() == ""):
+
+        if self.propotion_of_test_text.text() == "":
             self.propotion_of_test_text.setText("33")
-        if (self.training_times_cbox.isChecked()):
-            if (self.training_times_text.text() == ""):
-                self.training_times_text.setText("100")
-            self.training_times = int(self.training_times_text.text())
-        if (self.recognition_cbox.isChecked()):
-            if (self.recognition_text.text() == ""):
-                self.recognition_text.setText("0.9")
-            self.recognition_condition = float(self.recognition_text.text())
+
+        if (not self.training_times_cbox.isChecked()) and (not self.recognition_cbox.isChecked()):
+            QMessageBox.about(self, "Warning", "No converge condition was set, set recognition boundary as 0.8")
+            self.recognition_cbox.setChecked(True)
+            self.recognition_text.setText("0.8")
+            self.recognition_boundary = 0.8
+            self.training_times = 500000
+        else:
+            if self.training_times_cbox.isChecked():
+                if self.training_times_text.text() == "":
+                    self.training_times_text.setText("1000")
+                self.training_times = int(self.training_times_text.text())
+            else:
+                self.training_times = 500000
+
+            if self.recognition_cbox.isChecked():
+                if self.recognition_text.text() == "":
+                    self.recognition_text.setText("0.9")
+                self.recognition_boundary = float(self.recognition_text.text())
+            else:
+                self.recognition_boundary = 0
 
         # assign value
         self.learning_rate = float(self.learning_rate_text.text())
         self.pro_of_test = float(int(self.propotion_of_test_text.text())/100)
         self.isPocket = True if (self.pocket_cbox.isChecked()) else False
         self.isMomentum = True if (self.momentum_cbox.isChecked()) else False
-        self.num_Hperceptron = int(self.num_Hperceptron_sbox.Value)
+        # self.num_Hperceptron = int(self.num_Hperceptron_sbox.value())
 
-        self.create_perceptron(self.num_Hperceptron)
-        self.split_train_test_data()
+        self.update_classifier()
         # set GUI
         self.load_training_data_btn.setEnabled(True)
         self.confirm_btn.setEnabled(False)
-        self.reset_weight_btn.setEnabled(False)
         self.reset_result_text()
     
     @pyqtSlot()
@@ -374,14 +383,14 @@ class MultiPerceptronView(QWidget):
 
     @pyqtSlot()
     def load_training(self):
-        self.draw_points("training")
+        # self.draw_points("training")
         # set GUI
         self.load_training_data_btn.setEnabled(False)
         self.start_training_btn.setEnabled(True)
     
     @pyqtSlot()
     def load_testing(self):
-        self.draw_points("testing")
+        # self.draw_points("testing")
         # set GUI
         self.load_testing_data_btn.setEnabled(False)
         self.start_training_btn.setEnabled(False)
@@ -391,40 +400,42 @@ class MultiPerceptronView(QWidget):
 
     @pyqtSlot()
     def start_training(self):
-        self.weight_result, self.training_times_result, proc_weight = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times)
-        self.drawer = Drawer(self.canvas, self.ax, self.feature, proc_weight)
-        self.drawer.start()  
-        self.drawer.finish.connect(self.update_training_result)
+        self.classifier.do_training()
+        # self.weight_result, self.training_times_result, proc_weight = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times)
+        # self.drawer = Drawer(self.canvas, self.ax, self.feature, proc_weight)
+        # self.drawer.start()  
+        # self.drawer.finish.connect(self.update_training_result)
+        self.update_training_result()
         self.start_training_btn.setEnabled(False)
 
     @pyqtSlot()
     def update_training_result(self):
-        self.recog_train = support.get_recognition(self.feature_train, self.label_train, self.weight_result, self.individual_label)
-        weight_res = [ round(w,3) for w in self.weight]
+        self.classifier.get_recognition(0)
+        # self.recog_train = support.get_recognition(self.feature_train, self.label_train, self.weight_result, self.individual_label)
+        # weight_res = [ round(w,3) for w in self.weight]
         # set GUI
-        self.weight_result_text.setText(str(weight_res))
-        self.training_recognition_text.setText(str(self.recog_train))
-        self.training_times_result_text.setText(str(self.training_times_result))
-        self.load_testing_data_btn.setEnabled(True)
+        # self.weight_result_text.setText(str(weight_res))
+        self.training_recognition_text.setText(str(self.classifier.training_recog))
+        self.training_times_result_text.setText(str(self.classifier.run))
+        # self.load_testing_data_btn.setEnabled(True)
         self.redo_btn.setEnabled(True)
 
     @pyqtSlot()
     def start_testing(self):
         # plot line
-        min_x1, max_x1 = min(self.feature[0])-0.5, max(self.feature[0])+0.5
-        self.ax.plot([min_x1, max_x1], [support.find_x2(self.weight[0], self.weight[1], self.weight[2], min_x1), support.find_x2(self.weight[0], self.weight[1], self.weight[2], max_x1)], color='orange', linewidth=2)
-        self.canvas.draw()
-        # get recognition
-        self.recog_test = support.get_recognition(self.feature_test, self.label_test, self.weight_result, self.individual_label)
-        self.testing_recognition_text.setText(str(self.recog_test))
-        # set GUI
-        self.reset_weight_btn.setEnabled(True)
-        self.confirm_btn.setEnabled(True)
-        self.confirm_btn.setText("Redo Again")
-        self.load_training_data_btn.setEnabled(False)
-        self.load_testing_data_btn.setEnabled(False)
-        self.start_training_btn.setEnabled(False)
-        self.start_testing_btn.setEnabled(False)
+        # min_x1, max_x1 = min(self.feature[0])-0.5, max(self.feature[0])+0.5
+        # self.ax.plot([min_x1, max_x1], [support.find_x2(self.weight[0], self.weight[1], self.weight[2], min_x1), support.find_x2(self.weight[0], self.weight[1], self.weight[2], max_x1)], color='orange', linewidth=2)
+        # self.canvas.draw()
+        # # get recognition
+        # self.recog_test = support.get_recognition(self.feature_test, self.label_test, self.weight_result, self.individual_label)
+        # self.testing_recognition_text.setText(str(self.recog_test))
+        # # set GUI
+        # self.confirm_btn.setEnabled(True)
+        # self.confirm_btn.setText("Redo Again")
+        # self.load_training_data_btn.setEnabled(False)
+        # self.load_testing_data_btn.setEnabled(False)
+        # self.start_training_btn.setEnabled(False)
+        # self.start_testing_btn.setEnabled(False)
         self.redo_btn.setEnabled(False)
     
     @pyqtSlot()
@@ -436,63 +447,60 @@ class MultiPerceptronView(QWidget):
         self.load_testing_data_btn.setEnabled(False)
         self.start_testing_btn.setEnabled(False)
         self.redo_btn.setEnabled(False)
-        self.reset_weight_btn.setEnabled(True)
         self.training_recognition_text.setText(" -- ")
+        self.training_rmse_text.setText(" -- ")
         self.training_times_result_text.setText(" -- ")
         self.weight_result_text.setText(" -- ")
-        self.learning_rate_text.clear()
-        self.training_times_text.clear()
-        self.propotion_of_test_text.clear()
+        # self.learning_rate_text.clear()
+        # self.training_times_text.clear()
+        # self.propotion_of_test_text.clear()
 
+    # ------------------------------------------------------------------
     def update_file_info(self):
-        self.dimension = len(self.feature)
-        self.name_text.setText(self.file_name)
         # set GUI
-        self.number_of_feature_text.setText(str(self.dimension))
-        self.number_of_class_text.setText(str(len(self.individual_label)))
-        self.number_of_instances_text.setText(str(len(self.label)))
+        self.name_text.setText(self.file_name)
+        self.number_of_feature_text.setText(str(self.classifier.dim))
+        self.number_of_class_text.setText(str(self.classifier.classes))
+        self.number_of_instances_text.setText(str(self.classifier.num_of_data))
 
-    def create_perceptron(self, num):
-        self.hiddden_perceptrons = []
-        # for i in range(num):
-        #     p = perceptron()
-        #     self.hiddden_perceptrons.append(p)
-
-    def split_train_test_data(self):
-        self.feature_train, self.label_train, self.feature_test, self.label_test = support.split_train_test_data(self.feature, self.label, self.pro_of_test)
+    def update_classifier(self):
+        self.classifier.initialize(self.training_times, self.recognition_boundary, self.learning_rate, self.pro_of_test, self.isPocket, self.isMomentum)
+        self.classifier.split_train_test_data()
         
-    def draw_points(self, mode):
-        self.ax.clear()
-        if(mode == "all"):
-            label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature, self.label, self.individual_label)
-            self.ax.set_title("All data")
-            self.ax.set_xlim(min(self.feature[0])-0.5, max(self.feature[0])+0.5)
-            self.ax.set_ylim(min(self.feature[1])-0.5, max(self.feature[1])+0.5)
-            self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
-            self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
-            self.canvas.draw()
-        elif(mode == "training"):
-            label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature_train, self.label_train, self.individual_label)
-            self.ax.set_title("Training data")
-            self.ax.set_xlim(min(self.feature_train[0])-0.5, max(self.feature_train[0])+0.5)
-            self.ax.set_ylim(min(self.feature_train[1])-0.5, max(self.feature_train[1])+0.5)
-            self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
-            self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
-            self.canvas.draw()
-        elif(mode == "testing"):
-            label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature_test, self.label_test, self.individual_label)
-            self.ax.set_title("Testing data")
-            self.ax.set_xlim(min(self.feature_test[0])-0.5, max(self.feature_test[0])+0.5)
-            self.ax.set_ylim(min(self.feature_test[1])-0.5, max(self.feature_test[1])+0.5)
-            self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
-            self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
-            self.canvas.draw()
+    # def draw_points(self, mode):
+    #     self.ax.clear()
+    #     if(mode == "all"):
+    #         label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature, self.label, self.individual_label)
+    #         self.ax.set_title("All data")
+    #         self.ax.set_xlim(min(self.feature[0])-0.5, max(self.feature[0])+0.5)
+    #         self.ax.set_ylim(min(self.feature[1])-0.5, max(self.feature[1])+0.5)
+    #         self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
+    #         self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
+    #         self.canvas.draw()
+    #     elif(mode == "training"):
+    #         label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature_train, self.label_train, self.individual_label)
+    #         self.ax.set_title("Training data")
+    #         self.ax.set_xlim(min(self.feature_train[0])-0.5, max(self.feature_train[0])+0.5)
+    #         self.ax.set_ylim(min(self.feature_train[1])-0.5, max(self.feature_train[1])+0.5)
+    #         self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
+    #         self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
+    #         self.canvas.draw()
+    #     elif(mode == "testing"):
+    #         label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature_test, self.label_test, self.individual_label)
+    #         self.ax.set_title("Testing data")
+    #         self.ax.set_xlim(min(self.feature_test[0])-0.5, max(self.feature_test[0])+0.5)
+    #         self.ax.set_ylim(min(self.feature_test[1])-0.5, max(self.feature_test[1])+0.5)
+    #         self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
+    #         self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
+    #         self.canvas.draw()
 
     def reset_result_text(self):
         self.weight_result_text.setText(" -- ")
-        self.training_recognition_text.setText(" -- ")
-        self.testing_recognition_text.setText(" -- ")
         self.training_times_result_text.setText(" -- ")
+        self.training_recognition_text.setText(" -- ")
+        self.training_rmse_text.setText(" -- ")
+        self.testing_recognition_text.setText(" -- ")
+        self.testing_rmse_text.setText(" -- ")
 
         
 
@@ -525,7 +533,7 @@ class Drawer(QThread):
                 self.ax.lines.pop(0)
             except Exception:
                 pass
-            lines = self.ax.plot([self.min_x1, self.max_x1], [support.find_x2(weight[0], weight[1], weight[2], self.min_x1), support.find_x2(weight[0], weight[1], weight[2], self.max_x1)], color='orange', linewidth=2)
+            # lines = self.ax.plot([self.min_x1, self.max_x1], [support.find_x2(weight[0], weight[1], weight[2], self.min_x1), support.find_x2(weight[0], weight[1], weight[2], self.max_x1)], color='orange', linewidth=2)
             self.canvas.draw()
             plt.pause(0.1)
             del self.proc[0]

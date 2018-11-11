@@ -35,26 +35,17 @@ class Perceptron():
 
     def compute_local_gradient_for_output(self, d):
         self.local_gradient = (d - self.output) * self.output * (1 - self.output)
-        # print("output local: ", self.local_gradient)
+
 
     def compute_local_gradient_for_hidden(self, output_pers, no):
         sigma_of_pers = 0
         for per in output_pers:
-            # print("output weight in hidden: ", per.weight)
-            # print("output local in hidden: ", per.local_gradient, np.asscalar(per.weight[0][no]))
-            # print("hidden local: ", ( per.local_gradient * np.asscalar(per.weight[0][no])))
             sigma_of_pers += ( per.local_gradient * np.asscalar(per.weight[0][no]))
         self.local_gradient = self.output * (1 - self.output) * sigma_of_pers
-        # print("hidden local: ", self.local_gradient)
 
     def adjust_weight(self, input):
         tmp = [-1]
         for i in input:
             tmp.append(i)
         real_input = np.array(tmp)
-        # print("gradient: ", self.local_gradient)
-        # print("real input: ", real_input)
-        # print("output: ", (self.local_gradient * real_input))
-        # print("delta weight: ", self.learning_rate * (self.local_gradient * real_input))
         self.weight = self.weight + self.learning_rate * (self.local_gradient * real_input)
-        # print(self.weight)

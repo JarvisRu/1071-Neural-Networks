@@ -1,46 +1,7 @@
 import perceptron
-import matplotlib.pyplot as plt
 import numpy as np
-from copy import deepcopy
 import random
 import math
-import time
-import os
-
-def find_all_dataset():
-    list_file = os.listdir('DataSet') 
-    txt_file = []
-    for f in list_file:
-        if(f.endswith(".txt")):
-            txt_file.append(f)
-    return txt_file
-
-def load_file_info(file_name):
-    file = open("DataSet/"+file_name, "r")
-    # using first line to get dimension
-    col = file.readline().strip().split(" ")
-    dim = len(col) - 1
-    feature = []
-    label = []
-    for n in range(dim):
-        feature.append([])
-    for n in range(dim):
-        feature[n].append(float(col[n]))
-    label.append(int(col[-1]))
-    for line in file:
-        col = line.strip().split(" ")
-        for n in range(dim):
-            feature[n].append(float(col[n]))
-        label.append(int(col[-1]))
-    file.close()
-    return feature, label
-
-def regularization_output(outputs):
-    result = []
-    for output in outputs:
-        tmp = 1 if outputs > 0.5 else 0
-        result.append(tmp)
-    return result
 
 def regularization_input(inputs):
     tmp_set = set(inputs)
@@ -67,8 +28,6 @@ def get_recognition(instances, label, hidden_pers, output_pers):
     recog = successful_num / len(instances)
     return recog
 
-
-
 if __name__ == '__main__':
 
     # file_name = "2Ccircle1.txt"
@@ -86,7 +45,7 @@ if __name__ == '__main__':
         for i in range(len(col) - 1):
             tmp.append(float(col[i]))
         instances.append(tmp)
-        label.append(int(col[-1]))
+        label.append(float(col[-1]))
     file.close()
 
     # get data info
@@ -95,13 +54,6 @@ if __name__ == '__main__':
     print(set(label))
 
     # create perceptron lists
-    # hidden_pers = []
-    # p1 = perceptron.Perceptron(dim)
-    # p2 = perceptron.Perceptron(dim)
-    # p1.set_weight([-1.2, 1, 1])
-    # p2.set_weight([0.3, 1, 1])
-    # hidden_pers.append(p1)
-    # hidden_pers.append(p2)
     hidden_pers = []
     for i in range(dim):
         p = perceptron.Perceptron(dim)
@@ -123,7 +75,6 @@ if __name__ == '__main__':
         run += 1
         is_converge = True
         for instance, expected_ans in zip(instances, label):
-            # print("==========================")
             # feedforward
             hidden_output = []
             output_output = []
@@ -132,16 +83,12 @@ if __name__ == '__main__':
             for output_per in output_pers:
                 output_output.append(output_per.activate_with_sigmoid(hidden_output))
 
-            # print(hidden_output)
-            # print(output_output)
-
             tmp_result = 1 if output_output[0] >= 0.5 else 0
             if tmp_result != expected_ans:
                 is_converge = False
 
             # back Propagation - compute local gradient
             if not is_converge:
-                # print("into Propagation")
                 output_pers[0].compute_local_gradient_for_output(expected_ans)
 
                 index = 0

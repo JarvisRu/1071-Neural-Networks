@@ -7,9 +7,9 @@ import math
 import time
 import os
 
-def regularization_output(output):
+def regularization_output(outputs):
     result = []
-    for output in output:
+    for output in outputs:
         tmp = 1 if output >= 0.5 else 0
         result.append(tmp)
     return result
@@ -67,7 +67,7 @@ if __name__ == '__main__':
         for i in range(len(col) - 1):
             tmp.append(float(col[i]))
         instances.append(tmp)
-        label.append(int(col[-1]))
+        label.append(float(col[-1]))
     file.close()
 
     # get data info
