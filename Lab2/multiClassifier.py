@@ -106,13 +106,11 @@ class MultiClassifier():
         self.output_pers = []
 
         for i in range(self.dim):
-            print("new hidden per")
             p = perceptron.Perceptron(self.dim)
             p.set_learning_rate(self.learning_rate)
             self.hidden_pers.append(p)
 
         for i in range(self.classes):
-            print("new output per")
             p = perceptron.Perceptron(self.dim)
             p.set_learning_rate(self.learning_rate)
             self.output_pers.append(p)
@@ -169,7 +167,7 @@ class MultiClassifier():
 
         self.run = 0
         is_converge, over_boundary = False, False
-
+        
         while (self.run < self.training_times) and (not is_converge) and (not over_boundary):
             self.run += 1
             is_converge = True

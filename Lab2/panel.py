@@ -415,9 +415,9 @@ class MultiPerceptronView(QWidget):
         # weight_res = [ round(w,3) for w in self.weight]
         # set GUI
         # self.weight_result_text.setText(str(weight_res))
-        self.training_recognition_text.setText(str(self.classifier.training_recog))
+        self.training_recognition_text.setText(str(self.classifier.training_recog * 100))
         self.training_times_result_text.setText(str(self.classifier.run))
-        # self.load_testing_data_btn.setEnabled(True)
+        self.load_testing_data_btn.setEnabled(True)
         self.redo_btn.setEnabled(True)
 
     @pyqtSlot()
@@ -427,15 +427,16 @@ class MultiPerceptronView(QWidget):
         # self.ax.plot([min_x1, max_x1], [support.find_x2(self.weight[0], self.weight[1], self.weight[2], min_x1), support.find_x2(self.weight[0], self.weight[1], self.weight[2], max_x1)], color='orange', linewidth=2)
         # self.canvas.draw()
         # # get recognition
+        self.classifier.get_recognition(1)
+        self.testing_recognition_text.setText(str(self.classifier.testing_recog * 100))
         # self.recog_test = support.get_recognition(self.feature_test, self.label_test, self.weight_result, self.individual_label)
-        # self.testing_recognition_text.setText(str(self.recog_test))
         # # set GUI
-        # self.confirm_btn.setEnabled(True)
-        # self.confirm_btn.setText("Redo Again")
-        # self.load_training_data_btn.setEnabled(False)
-        # self.load_testing_data_btn.setEnabled(False)
-        # self.start_training_btn.setEnabled(False)
-        # self.start_testing_btn.setEnabled(False)
+        self.confirm_btn.setEnabled(True)
+        self.confirm_btn.setText("Redo Again")
+        self.load_training_data_btn.setEnabled(False)
+        self.load_testing_data_btn.setEnabled(False)
+        self.start_training_btn.setEnabled(False)
+        self.start_testing_btn.setEnabled(False)
         self.redo_btn.setEnabled(False)
     
     @pyqtSlot()
