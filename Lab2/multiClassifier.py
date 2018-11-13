@@ -122,7 +122,7 @@ class MultiClassifier():
             p = perceptron.Perceptron(self.dim)
             p.set_learning_rate(self.learning_rate)
             if self.dim == 2:
-                self.history_weight[self.history_idx].append(p.weight.tolist()[0])
+                self.history_weight[self.history_idx].append(p.weight)
             self.hidden_pers.append(p)
         
         # output layer
@@ -130,23 +130,24 @@ class MultiClassifier():
             p = perceptron.Perceptron(self.dim)
             p.set_learning_rate(self.learning_rate)
             if self.dim == 2:
-                self.history_weight[self.history_idx].append(p.weight.tolist()[0])
+                self.history_weight[self.history_idx].append(p.weight)
             self.output_pers.append(p)
         else:
             for i in range(self.classes):
                 p = perceptron.Perceptron(self.dim)
                 p.set_learning_rate(self.learning_rate)
                 if self.dim == 2:
-                    self.history_weight[self.history_idx].append(p.weight.tolist()[0])
+                    self.history_weight[self.history_idx].append(p.weight)
                 self.output_pers.append(p)
 
     def __record_weight(self):
         self.history_idx += 1
         self.history_weight.append([])
         for hidden_per in self.hidden_pers:
-            self.history_weight[self.history_idx].append(hidden_per.weight.tolist()[0])
+            self.history_weight[self.history_idx].append(hidden_per.weight)
         for output_per in self.output_pers:
-            self.history_weight[self.history_idx].append(output_per.weight.tolist()[0])
+            self.history_weight[self.history_idx].append(output_per.weight)
+           
 
     def __do_training_with_single(self):
         
@@ -276,14 +277,10 @@ class MultiClassifier():
         successful_num = 0
         for instance, expected_ans in zip(instances, labels):
             # feedforward
-            print("instance ", instance)
             hidden_output = []
             for hidden_per in self.hidden_pers:
-                print("per weight: ", hidden_per.weight)
                 hidden_output.append(hidden_per.activate_with_sigmoid(instance))
             output = self.output_pers[0].activate_with_sigmoid(hidden_output)
-            print("hidden_output: ", hidden_output)
-            print("output: ", output)
 
             tmp_result = 1 if output >= 0.5 else 0
             if tmp_result == expected_ans:

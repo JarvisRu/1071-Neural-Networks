@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt, pyqtSlot, QThread, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QSpinBox, QComboBox, QCheckBox)
 from matplotlib.backends.backend_qt5agg import FigureCanvas 
 from matplotlib.figure import Figure
+from copy import deepcopy
 
 
 class MultiPerceptronView(QWidget):
@@ -545,69 +546,69 @@ class Drawer(QThread):
         super().__init__()
         self.canvas = canvas
         self.ax = ax
-        self.updated_x, self.updated_y = x, y 
+        self.x, self.y = x, y 
         self.history_weight = history_weight
         self.color = color
         self.boundary_x, self.boundary_y = 0, 0
         self.num_of_lines = len(self.history_weight[0]) - 2
 
     def update_coordinate(self, old_x, old_y, weights):
-        print("weight - 0: ", weights[0])
-        print("weight - 1: ", weights[1])
-        for xs, ys in zip(old_x, old_y):
+        new_x, new_y = deepcopy(old_x), deepcopy(old_y)
+        for xs, ys in zip(new_x, new_y):
             for i in range(len(xs)):
-                print("before: ", xs[i], ys[i])
-                xs[i] = 1 / (1 + math.exp(-1 * (round(weights[0][0], 8)*-1 + round(weights[0][1], 8)*xs[i] + round(weights[0][2], 8)*ys[i])))
-                ys[i] = 1 / (1 + math.exp(-1 * (round(weights[1][0], 8)*-1 + round(weights[1][1], 8)*xs[i] + round(weights[1][2], 8)*ys[i])))
-                print("after: ", xs[i], ys[i])
-        return old_x, old_y
+                real_input = np.array([-1, xs[i], ys[i]])
+                vx, vy = np.sum(weights[0] * real_input), np.sum(weights[1] * real_input)
+                xs[i] = 1 / (1 + math.exp(-1 * vx))
+                ys[i] = 1 / (1 + math.exp(-1 * vy))
+        return new_x, new_y
 
     def find_y(self, weights, x):
-        weight = weights[2]
-        # print("last: ", weight)
-        # return (weight[0] - ( weight[1] * x)) / weight[2]
-        return (round(weight[0], 8) - ( round(weight[1], 8) * x)) / round(weight[2], 8)
+        weight = weights[0]
+        return (np.asscalar(weight[0]) - np.asscalar(weight[1]) * x) / np.asscalar(weight[2])
 
     def run(self):
-        # print("H: ", self.history_weight)
-        # for weights in self.history_weight:
-        #     self.ax.clear()
-        #     # update new x, y based on weight
-        #     self.updated_x, self.updated_y = self.update_coordinate(self.updated_x, self.updated_y, weights)
-        #     boundary_x, boundary_y = support.get_boudary_of_axis(self.updated_x, self.updated_y)
-        #     # print("==============updated===============")
-        #     # print(self.updated_x, self.updated_y)
-        #     # print(boundary_x, boundary_y)
-        #     x_spacing = (boundary_x[1] - boundary_x[0]) / 10
-        #     y_spacing = (boundary_y[1] - boundary_y[0]) / 10
-        #     self.ax.set_xlim(boundary_x[0] - x_spacing, boundary_x[1] + x_spacing)
-        #     self.ax.set_ylim(boundary_y[0] - y_spacing, boundary_y[1] + y_spacing)
-        #     index = 0
-        #     for x, y in zip(self.updated_x, self.updated_y):
-        #         self.ax.scatter(x, y, c = self.color[index] , s=8)
-        #         index += 1
-        #     plt.pause(0.1)
-        #     self.canvas.draw()
+        for weights in self.history_weight:
+            self.ax.clear()
+            # update new x, y based on weight
+            updated_x, updated_y = self.update_coordinate(self.x, self.y, weights)
+            boundary_x, boundary_y = support.get_boudary_of_axis(updated_x, updated_y)
+
+            x_spacing = (boundary_x[1] - boundary_x[0]) / 10
+            y_spacing = (boundary_y[1] - boundary_y[0]) / 10
+            self.ax.set_xlim(boundary_x[0] - x_spacing, boundary_x[1] + x_spacing)
+            self.ax.set_ylim(boundary_y[0] - y_spacing, boundary_y[1] + y_spacing)
+            
+            # plot 
+            index = 0
+            for x, y in zip(updated_x, updated_y):
+                self.ax.scatter(x, y, c = self.color[index] , s=8)
+                index += 1
+
+            for line in range(self.num_of_lines):
+                self.ax.plot([boundary_x[0] - x_spacing, boundary_x[1] + x_spacing], [self.find_y(weights[-1 * line], boundary_x[0] - x_spacing), self.find_y(weights[-1 * line], boundary_x[1] + x_spacing)])
+            plt.pause(0.1)
+            self.canvas.draw()
         
         # just draw for the last time
-        self.ax.clear()
-        self.updated_x, self.updated_y = self.update_coordinate(self.updated_x, self.updated_y, self.history_weight[-1])
-        boundary_x, boundary_y = support.get_boudary_of_axis(self.updated_x, self.updated_y)
+        # self.ax.clear()
+        # self.updated_x, self.updated_y = self.update_coordinate(self.updated_x, self.updated_y, self.history_weight[-1])
+        # boundary_x, boundary_y = support.get_boudary_of_axis(self.updated_x, self.updated_y)
 
-        w = self.history_weight[-1][2]
+        # x_spacing, y_spacing = (boundary_x[1] - boundary_x[0]) / 10, (boundary_y[1] - boundary_y[0]) / 10
+        # self.ax.set_xlim(boundary_x[0] - x_spacing, boundary_x[1] + x_spacing)
+        # self.ax.set_ylim(boundary_y[0] - y_spacing, boundary_y[1] + y_spacing)
 
-        x_spacing, y_spacing = (boundary_x[1] - boundary_x[0]) / 10, (boundary_y[1] - boundary_y[0]) / 10
-        self.ax.set_xlim(boundary_x[0] - x_spacing, boundary_x[1] + x_spacing)
-        self.ax.set_ylim(boundary_y[0] - y_spacing, boundary_y[1] + y_spacing)
-
-        index = 0
-        for x, y in zip(self.updated_x, self.updated_y):
-            self.ax.scatter(x, y, c = self.color[index] , s=8)
-            index += 1
+        # index = 0
+        # for x, y in zip(self.updated_x, self.updated_y):
+        #     self.ax.scatter(x, y, c = self.color[index] , s=8)
+        #     index += 1
         
-        self.ax.plot([boundary_x[0] - x_spacing, boundary_x[1] + x_spacing], [self.find_y(self.history_weight[-1], boundary_x[0] - x_spacing), self.find_y(self.history_weight[-1], boundary_x[1] + x_spacing)])
+        # for line in range(self.num_of_lines):
+        #     line += 1
+        #     self.ax.plot([boundary_x[0] - x_spacing, boundary_x[1] + x_spacing], [self.find_y(self.history_weight[-1][-1 * line], boundary_x[0] - x_spacing), self.find_y(self.history_weight[-1][-1 * line], boundary_x[1] + x_spacing)])
 
-        self.canvas.draw()
+        # self.canvas.draw()
+        # trash
         # plt.ion()
         # while len(self.proc) != 0:
         #     weight = self.proc[0]
