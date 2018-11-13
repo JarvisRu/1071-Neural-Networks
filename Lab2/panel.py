@@ -1,7 +1,8 @@
 import support
 import multiClassifier
+import numpy as np
 import sys
-import time
+import math
 import matplotlib.pyplot as plt
 from PyQt5.QtCore import Qt, pyqtSlot, QThread, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QSpinBox, QComboBox, QCheckBox)
@@ -39,6 +40,8 @@ class MultiPerceptronView(QWidget):
         self.__window_layout.addLayout(self.__result_layout, 1)
         self.__window_layout.setContentsMargins(5, 5, 5, 5)
         self.setLayout(self.__window_layout)
+
+        self.color = ["blue", "green", "purple", "orange", "black", "pink"]
 
     def __set_file_box_UI(self):
         self.__file_box = QGroupBox('File')
@@ -304,13 +307,14 @@ class MultiPerceptronView(QWidget):
     def load_file(self):
         self.file_name = str(self.file_cb.currentText())
         self.classifier.load_file_info(self.file_name)
-        # self.feature, self.label = support.load_file_info(self.file_name)
-        # self.individual_label = support.get_individual_label(self.label)
-        # if (len(self.feature) > 2):
-        #     QMessageBox.about(self, "Warning", "Exist more than 2 features, automatically ignore them.")
-        # if (len(self.individual_label) > 2):
-        #     QMessageBox.about(self, "Warning", "Exist more than 3 classes, treat them as class 2.")
-        #     self.label = support.handle_as_noise( self.label, self.individual_label)
+        if self.classifier.dim == 2:
+            self.draw_points("all")
+        else:
+            self.ax.clear()
+            self.ax.set_title("Over 2 dimension")
+            self.canvas.draw()
+            QMessageBox.about(self, "Warning", "Exist more than 2 dimension, drawing failed.")
+    
         self.update_file_info()
         # self.update_initial_weight()
         # self.draw_points("all")
@@ -368,7 +372,6 @@ class MultiPerceptronView(QWidget):
         self.pro_of_test = float(int(self.propotion_of_test_text.text())/100)
         self.isPocket = True if (self.pocket_cbox.isChecked()) else False
         self.isMomentum = True if (self.momentum_cbox.isChecked()) else False
-        # self.num_Hperceptron = int(self.num_Hperceptron_sbox.value())
 
         self.update_classifier()
         # set GUI
@@ -383,14 +386,16 @@ class MultiPerceptronView(QWidget):
 
     @pyqtSlot()
     def load_training(self):
-        # self.draw_points("training")
+        if self.classifier.dim == 2:
+            self.draw_points("training")
         # set GUI
         self.load_training_data_btn.setEnabled(False)
         self.start_training_btn.setEnabled(True)
     
     @pyqtSlot()
     def load_testing(self):
-        # self.draw_points("testing")
+        if self.classifier.dim == 2:
+            self.draw_points("testing")
         # set GUI
         self.load_testing_data_btn.setEnabled(False)
         self.start_training_btn.setEnabled(False)
@@ -401,11 +406,22 @@ class MultiPerceptronView(QWidget):
     @pyqtSlot()
     def start_training(self):
         self.classifier.do_training()
+        # print(self.classifier.history_weight)
+        # print(len(self.classifier.history_weight))
+        # print(len(self.classifier.history_weight[0]) - 2)
+        if self.classifier.dim == 2:
+            self.drawer = Drawer(self.canvas, self.ax, self.training_x, self.training_y, self.classifier.history_weight, self.color)
+            self.drawer.start()     
+            self.drawer.finish.connect(self.update_training_result)
+            # print(self.classifier.output_pers[0].weight)
+        else:
+            self.update_training_result()
+        # self.update_training_result()
         # self.weight_result, self.training_times_result, proc_weight = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times)
         # self.drawer = Drawer(self.canvas, self.ax, self.feature, proc_weight)
         # self.drawer.start()  
         # self.drawer.finish.connect(self.update_training_result)
-        self.update_training_result()
+        
         self.start_training_btn.setEnabled(False)
 
     @pyqtSlot()
@@ -452,9 +468,6 @@ class MultiPerceptronView(QWidget):
         self.training_rmse_text.setText(" -- ")
         self.training_times_result_text.setText(" -- ")
         self.weight_result_text.setText(" -- ")
-        # self.learning_rate_text.clear()
-        # self.training_times_text.clear()
-        # self.propotion_of_test_text.clear()
 
     # ------------------------------------------------------------------
     def update_file_info(self):
@@ -468,32 +481,41 @@ class MultiPerceptronView(QWidget):
         self.classifier.initialize(self.training_times, self.recognition_boundary, self.learning_rate, self.pro_of_test, self.isPocket, self.isMomentum)
         self.classifier.split_train_test_data()
         
-    # def draw_points(self, mode):
-    #     self.ax.clear()
-    #     if(mode == "all"):
-    #         label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature, self.label, self.individual_label)
-    #         self.ax.set_title("All data")
-    #         self.ax.set_xlim(min(self.feature[0])-0.5, max(self.feature[0])+0.5)
-    #         self.ax.set_ylim(min(self.feature[1])-0.5, max(self.feature[1])+0.5)
-    #         self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
-    #         self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
-    #         self.canvas.draw()
-    #     elif(mode == "training"):
-    #         label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature_train, self.label_train, self.individual_label)
-    #         self.ax.set_title("Training data")
-    #         self.ax.set_xlim(min(self.feature_train[0])-0.5, max(self.feature_train[0])+0.5)
-    #         self.ax.set_ylim(min(self.feature_train[1])-0.5, max(self.feature_train[1])+0.5)
-    #         self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
-    #         self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
-    #         self.canvas.draw()
-    #     elif(mode == "testing"):
-    #         label1_x1, label1_x2, label2_x1, label2_x2 = support.get_seperate_points(self.feature_test, self.label_test, self.individual_label)
-    #         self.ax.set_title("Testing data")
-    #         self.ax.set_xlim(min(self.feature_test[0])-0.5, max(self.feature_test[0])+0.5)
-    #         self.ax.set_ylim(min(self.feature_test[1])-0.5, max(self.feature_test[1])+0.5)
-    #         self.ax.scatter(label1_x1, label1_x2, c='blue' , s=10)
-    #         self.ax.scatter(label2_x1, label2_x2, c='green' , s=10)
-    #         self.canvas.draw()
+    def draw_points(self, mode):
+        self.ax.clear()
+        if(mode == "all"):
+            point_x, point_y = support.get_seperate_points(self.classifier.instances, self.classifier.labels)
+            boundary_x, boundary_y = support.get_boudary_of_axis(point_x, point_y)
+            self.ax.set_title("All data")
+            self.ax.set_xlim(boundary_x[0] - 0.5, boundary_x[1] + 0.5)
+            self.ax.set_ylim(boundary_y[0] - 0.5, boundary_y[1] + 0.5)
+            index = 0
+            for x, y in zip(point_x, point_y):
+                self.ax.scatter(x, y, c = self.color[index] , s=8)
+                index += 1
+            self.canvas.draw()
+        elif(mode == "training"):
+            self.training_x, self.training_y = support.get_seperate_points(self.classifier.training_instances, self.classifier.training_labels)
+            boundary_x, boundary_y = support.get_boudary_of_axis(self.training_x, self.training_y)
+            self.ax.set_title("Training data")
+            self.ax.set_xlim(boundary_x[0] - 0.5, boundary_x[1] + 0.5)
+            self.ax.set_ylim(boundary_y[0] - 0.5, boundary_y[1] + 0.5)
+            index = 0
+            for x, y in zip(self.training_x, self.training_y):
+                self.ax.scatter(x, y, c = self.color[index] , s=8)
+                index += 1
+            self.canvas.draw()
+        elif(mode == "testing"):
+            point_x, point_y = support.get_seperate_points(self.classifier.testing_instances, self.classifier.testing_labels)
+            boundary_x, boundary_y = support.get_boudary_of_axis(point_x, point_y)
+            self.ax.set_title("Testing data")
+            self.ax.set_xlim(boundary_x[0] - 0.5, boundary_x[1] + 0.5)
+            self.ax.set_ylim(boundary_y[0] - 0.5, boundary_y[1] + 0.5)
+            index = 0
+            for x, y in zip(point_x, point_y):
+                self.ax.scatter(x, y, c = self.color[index] , s=8)
+                index += 1
+            self.canvas.draw()
 
     def reset_result_text(self):
         self.weight_result_text.setText(" -- ")
@@ -519,27 +541,86 @@ class BaseWindow(QMainWindow):
 class Drawer(QThread):
     finish = pyqtSignal()
 
-    def __init__(self, canvas, ax, feature, weight):
+    def __init__(self, canvas, ax, x, y, history_weight, color):
         super().__init__()
         self.canvas = canvas
         self.ax = ax
-        self.proc = weight
-        self.min_x1, self.max_x1 = min(feature[0])-0.5, max(feature[0])+0.5
-    
+        self.updated_x, self.updated_y = x, y 
+        self.history_weight = history_weight
+        self.color = color
+        self.boundary_x, self.boundary_y = 0, 0
+        self.num_of_lines = len(self.history_weight[0]) - 2
+
+    def update_coordinate(self, old_x, old_y, weights):
+        print("weight - 0: ", weights[0])
+        print("weight - 1: ", weights[1])
+        for xs, ys in zip(old_x, old_y):
+            for i in range(len(xs)):
+                print("before: ", xs[i], ys[i])
+                xs[i] = 1 / (1 + math.exp(-1 * (round(weights[0][0], 8)*-1 + round(weights[0][1], 8)*xs[i] + round(weights[0][2], 8)*ys[i])))
+                ys[i] = 1 / (1 + math.exp(-1 * (round(weights[1][0], 8)*-1 + round(weights[1][1], 8)*xs[i] + round(weights[1][2], 8)*ys[i])))
+                print("after: ", xs[i], ys[i])
+        return old_x, old_y
+
+    def find_y(self, weights, x):
+        weight = weights[2]
+        # print("last: ", weight)
+        # return (weight[0] - ( weight[1] * x)) / weight[2]
+        return (round(weight[0], 8) - ( round(weight[1], 8) * x)) / round(weight[2], 8)
+
     def run(self):
-        plt.ion()
-        while len(self.proc) != 0:
-            weight = self.proc[0]
-            try:
-                self.ax.lines.pop(0)
-            except Exception:
-                pass
-            # lines = self.ax.plot([self.min_x1, self.max_x1], [support.find_x2(weight[0], weight[1], weight[2], self.min_x1), support.find_x2(weight[0], weight[1], weight[2], self.max_x1)], color='orange', linewidth=2)
-            self.canvas.draw()
-            plt.pause(0.1)
-            del self.proc[0]
-        plt.ioff()
-        plt.show()
+        # print("H: ", self.history_weight)
+        # for weights in self.history_weight:
+        #     self.ax.clear()
+        #     # update new x, y based on weight
+        #     self.updated_x, self.updated_y = self.update_coordinate(self.updated_x, self.updated_y, weights)
+        #     boundary_x, boundary_y = support.get_boudary_of_axis(self.updated_x, self.updated_y)
+        #     # print("==============updated===============")
+        #     # print(self.updated_x, self.updated_y)
+        #     # print(boundary_x, boundary_y)
+        #     x_spacing = (boundary_x[1] - boundary_x[0]) / 10
+        #     y_spacing = (boundary_y[1] - boundary_y[0]) / 10
+        #     self.ax.set_xlim(boundary_x[0] - x_spacing, boundary_x[1] + x_spacing)
+        #     self.ax.set_ylim(boundary_y[0] - y_spacing, boundary_y[1] + y_spacing)
+        #     index = 0
+        #     for x, y in zip(self.updated_x, self.updated_y):
+        #         self.ax.scatter(x, y, c = self.color[index] , s=8)
+        #         index += 1
+        #     plt.pause(0.1)
+        #     self.canvas.draw()
+        
+        # just draw for the last time
+        self.ax.clear()
+        self.updated_x, self.updated_y = self.update_coordinate(self.updated_x, self.updated_y, self.history_weight[-1])
+        boundary_x, boundary_y = support.get_boudary_of_axis(self.updated_x, self.updated_y)
+
+        w = self.history_weight[-1][2]
+
+        x_spacing, y_spacing = (boundary_x[1] - boundary_x[0]) / 10, (boundary_y[1] - boundary_y[0]) / 10
+        self.ax.set_xlim(boundary_x[0] - x_spacing, boundary_x[1] + x_spacing)
+        self.ax.set_ylim(boundary_y[0] - y_spacing, boundary_y[1] + y_spacing)
+
+        index = 0
+        for x, y in zip(self.updated_x, self.updated_y):
+            self.ax.scatter(x, y, c = self.color[index] , s=8)
+            index += 1
+        
+        self.ax.plot([boundary_x[0] - x_spacing, boundary_x[1] + x_spacing], [self.find_y(self.history_weight[-1], boundary_x[0] - x_spacing), self.find_y(self.history_weight[-1], boundary_x[1] + x_spacing)])
+
+        self.canvas.draw()
+        # plt.ion()
+        # while len(self.proc) != 0:
+        #     weight = self.proc[0]
+        #     try:
+        #         self.ax.lines.pop(0)
+        #     except Exception:
+        #         pass
+        #     # lines = self.ax.plot([self.min_x1, self.max_x1], [support.find_x2(weight[0], weight[1], weight[2], self.min_x1), support.find_x2(weight[0], weight[1], weight[2], self.max_x1)], color='orange', linewidth=2)
+        #     self.canvas.draw()
+        #     plt.pause(0.1)
+        #     del self.proc[0]
+        # plt.ioff()
+        # plt.show()
         self.finish.emit()
 
 

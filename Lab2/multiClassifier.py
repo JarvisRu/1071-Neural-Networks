@@ -11,6 +11,7 @@ class MultiClassifier():
     def __refresh(self):
         self.instances, self.labels = [], []
         self.dim, self.classes, self.num_of_data = 0, 0, 0
+        self.individual_instances = []
 
         self.training_times = 0
         self.hasBoundary, self.recognition_boundary = False, 0
@@ -59,6 +60,13 @@ class MultiClassifier():
         self.num_of_data = len(self.labels)
         self.classes, self.labels = self.__regularize_input(self.labels)
 
+    def split_individual_classes(self):
+        for i in range(self.classes):
+            self.individual_instances.append([])
+        for instance, label in zip(self.instances, self.labels):
+            self.individual_instances[label].append(instance)
+        return self.individual_instances
+
     def initialize(self, training_times, recognition_boundary, learning_rate, pro_of_test, isPocket, isMomentum):
         self.training_times = training_times
         if recognition_boundary == 0:
@@ -104,16 +112,41 @@ class MultiClassifier():
     def __new_perceptorns(self):
         self.hidden_pers = []
         self.output_pers = []
+        self.history_weight, self.history_idx = [], 0
 
+        if self.dim == 2:
+            self.history_weight.append([])
+
+        # hidden layer
         for i in range(self.dim):
             p = perceptron.Perceptron(self.dim)
             p.set_learning_rate(self.learning_rate)
+            if self.dim == 2:
+                self.history_weight[self.history_idx].append(p.weight.tolist()[0])
             self.hidden_pers.append(p)
-
-        for i in range(self.classes):
+        
+        # output layer
+        if self.classes == 2:
             p = perceptron.Perceptron(self.dim)
             p.set_learning_rate(self.learning_rate)
+            if self.dim == 2:
+                self.history_weight[self.history_idx].append(p.weight.tolist()[0])
             self.output_pers.append(p)
+        else:
+            for i in range(self.classes):
+                p = perceptron.Perceptron(self.dim)
+                p.set_learning_rate(self.learning_rate)
+                if self.dim == 2:
+                    self.history_weight[self.history_idx].append(p.weight.tolist()[0])
+                self.output_pers.append(p)
+
+    def __record_weight(self):
+        self.history_idx += 1
+        self.history_weight.append([])
+        for hidden_per in self.hidden_pers:
+            self.history_weight[self.history_idx].append(hidden_per.weight.tolist()[0])
+        for output_per in self.output_pers:
+            self.history_weight[self.history_idx].append(output_per.weight.tolist()[0])
 
     def __do_training_with_single(self):
         
@@ -154,12 +187,20 @@ class MultiClassifier():
                     for output_per in self.output_pers:
                         output_per.adjust_weight(hidden_output)
                     
+                    # record weight into histroy_weight
+                    if (self.dim == 2) and (self.run % 20 == 0):
+                        self.__record_weight()
+
                     # training again with new weight
                     if self.hasBoundary:
                         if self.get_recognition(0) > self.recognition_boundary:
                             print("over_boundary!!")
                             over_boundary = True
                     break
+
+        # record final weight
+        if self.dim == 2:
+            self.__record_weight()
 
     def __do_training_with_multi(self):
         
@@ -208,12 +249,20 @@ class MultiClassifier():
                     for output_per in self.output_pers:
                         output_per.adjust_weight(hidden_output)
                     
+                    # record weight into histroy_weight
+                    if (self.dim == 2) and (self.run % 20 == 0):
+                        self.__record_weight()
+
                     # training again with new weight
                     if self.hasBoundary:
                         if self.get_recognition(0) > self.recognition_boundary:
                             print("over_boundary!!")
                             over_boundary = True
                     break
+
+        # record final weight
+        if self.dim == 2:
+            self.__record_weight()
 
     def get_recognition(self, mode):
         if self.classes == 2:
@@ -227,10 +276,14 @@ class MultiClassifier():
         successful_num = 0
         for instance, expected_ans in zip(instances, labels):
             # feedforward
+            print("instance ", instance)
             hidden_output = []
             for hidden_per in self.hidden_pers:
+                print("per weight: ", hidden_per.weight)
                 hidden_output.append(hidden_per.activate_with_sigmoid(instance))
             output = self.output_pers[0].activate_with_sigmoid(hidden_output)
+            print("hidden_output: ", hidden_output)
+            print("output: ", output)
 
             tmp_result = 1 if output >= 0.5 else 0
             if tmp_result == expected_ans:
@@ -276,34 +329,7 @@ class MultiClassifier():
 
 
 
-# def get_individual_label(label):
-#     labels = set(label)
-#     individual_label = list(labels)
-#     individual_label.sort()
-#     return individual_label
-
-# # treat all noise as class 2
-# def handle_as_noise(label, individual_label):
-#     for i in range(len(individual_label) - 2):
-#         for l in label:
-#             if(l == individual_label[i+2]):
-#                 l = individual_label[1]
-#     return label
 
 # def find_x2(w0, w1, w2, x1):
 #     return (w0-(w1*x1)) / w2
-
-# def get_seperate_points(feature, label, individual_label):
-#     label1_x1 = []
-#     label1_x2 = []
-#     label2_x1 = []
-#     label2_x2 = []
-#     for x1, x2, expected_ans in zip(feature[0], feature[1], label):
-#         if expected_ans == individual_label[0]:
-#             label1_x1.append(float(x1))
-#             label1_x2.append(float(x2))
-#         else:
-#             label2_x1.append(float(x1))
-#             label2_x2.append(float(x2))
-#     return label1_x1, label1_x2, label2_x1, label2_x2
 
