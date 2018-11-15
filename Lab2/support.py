@@ -1,4 +1,6 @@
 import os
+import math
+import numpy as np
 from copy import deepcopy
 
 def find_all_dataset():
@@ -35,3 +37,17 @@ def get_boudary_of_axis(point_x, point_y):
     max_y = max(max(y) for y in point_y)
 
     return [min_x, max_x], [min_y, max_y]
+
+def update_coordinate(old_x, old_y, weights):
+    new_x, new_y = deepcopy(old_x), deepcopy(old_y)
+    for xs, ys in zip(new_x, new_y):
+        for i in range(len(xs)):
+            real_input = np.array([-1, xs[i], ys[i]])
+            vx, vy = np.sum(weights[0] * real_input), np.sum(weights[1] * real_input)
+            xs[i] = 1 / (1 + math.exp(-1 * vx))
+            ys[i] = 1 / (1 + math.exp(-1 * vy))
+    return new_x, new_y
+
+def find_y(weights, x):
+    weight = weights[0]
+    return (np.asscalar(weight[0]) - np.asscalar(weight[1]) * x) / np.asscalar(weight[2])

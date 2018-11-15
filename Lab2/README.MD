@@ -22,3 +22,4 @@
 - Deal with multi dimension
 - Draw the figure for 2-dimension instances
 - Compute recognition & RMSE for training and testing data
+- Optimize with **Pocket Therom** & **Momentum**

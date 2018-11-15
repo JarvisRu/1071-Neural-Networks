@@ -1,4 +1,5 @@
 import perceptron
+import numpy as np
 from copy import deepcopy
 import random
 import time
@@ -78,6 +79,7 @@ class MultiClassifier():
         self.pro_of_test = pro_of_test
         self.isPocket = isPocket
         self.isMomentum = isMomentum
+        print("Mom: ", self.isMomentum)
         
     def split_train_test_data(self):
         propotion = (int)(self.pro_of_test * self.num_of_data)
@@ -147,17 +149,19 @@ class MultiClassifier():
             self.history_weight[self.history_idx].append(hidden_per.weight)
         for output_per in self.output_pers:
             self.history_weight[self.history_idx].append(output_per.weight)
-           
 
     def __do_training_with_single(self):
         
         self.__new_perceptorns()
 
         self.run = 0
+        self.compute_rmse_times = 0
+        self.rmse = []
         is_converge, over_boundary = False, False
 
         while (self.run < self.training_times) and (not is_converge) and (not over_boundary):
             self.run += 1
+            print(self.run)
             is_converge = True
 
             for instance, expected_ans in zip(self.training_instances, self.training_labels):
@@ -170,6 +174,7 @@ class MultiClassifier():
                     output_output.append(output_per.activate_with_sigmoid(hidden_output))
 
                 tmp_result = 1 if output_output[0] >= 0.5 else 0
+                self.__compute_rmse(tmp_result, expected_ans)
                 if tmp_result != expected_ans:
                     is_converge = False
 
@@ -184,9 +189,9 @@ class MultiClassifier():
 
                     # back Propagation - adjust weight
                     for hidden_per in self.hidden_pers:
-                        hidden_per.adjust_weight(instance)
+                        hidden_per.adjust_weight(instance, self.isMomentum)
                     for output_per in self.output_pers:
-                        output_per.adjust_weight(hidden_output)
+                        output_per.adjust_weight(hidden_output, self.isMomentum)
                     
                     # record weight into histroy_weight
                     if (self.dim == 2) and (self.run % 20 == 0):
@@ -208,6 +213,7 @@ class MultiClassifier():
         self.__new_perceptorns()
 
         self.run = 0
+        self.rmse = []
         is_converge, over_boundary = False, False
         
         while (self.run < self.training_times) and (not is_converge) and (not over_boundary):
@@ -224,6 +230,7 @@ class MultiClassifier():
                     output_output.append(output_per.activate_with_sigmoid(hidden_output))
 
                 tmp_result = self.__regularize_output(output_output)
+                self.__compute_rmse(tmp_result, expected_ans)
                 for i in range(len(tmp_result)):
                     if i != expected_ans and tmp_result[i] == 1:
                         is_converge = False
@@ -246,9 +253,9 @@ class MultiClassifier():
 
                     # back Propagation - adjust weight
                     for hidden_per in self.hidden_pers:
-                        hidden_per.adjust_weight(instance)
+                        hidden_per.adjust_weight(instance, self.isMomentum)
                     for output_per in self.output_pers:
-                        output_per.adjust_weight(hidden_output)
+                        output_per.adjust_weight(hidden_output, self.isMomentum)
                     
                     # record weight into histroy_weight
                     if (self.dim == 2) and (self.run % 20 == 0):
@@ -324,9 +331,21 @@ class MultiClassifier():
             self.testing_recog = recog
         return recog
 
+    def get_rmse(self):
+        tmp = sum(self.rmse) / len(self.rmse)
+        return np.sqrt(tmp)
 
-
-
-# def find_x2(w0, w1, w2, x1):
-#     return (w0-(w1*x1)) / w2
+    def __compute_rmse(self, predict, expected):
+        if self.classes == 2:
+            tmp = (predict - expected)**2 / 2
+            self.rmse.append(tmp)
+        else:
+            tmp = 0
+            for i in range(len(predict)):
+                if i != expected:
+                    tmp += (predict[i] - 0)**2
+                else:
+                    tmp += (predict[i] - 1)**2
+            tmp /= 2
+            self.rmse.append(tmp)
 

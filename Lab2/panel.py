@@ -108,20 +108,11 @@ class MultiPerceptronView(QWidget):
         self.__setting_box = QGroupBox('Setting')
         # entire setting_box
         vbox = QVBoxLayout()
+
         # individual section
-        # perceptron_box = QHBoxLayout()
         learning_spilt_box = QHBoxLayout()
         converge_condition_box = QVBoxLayout()
         optimized_box = QVBoxLayout()
-
-        # perceptorn section
-        # num_Hperceptron_label = QLabel("Number of hidden perceptrons :")
-        # self.num_Hperceptron_sbox = QSpinBox()
-        # self.num_Hperceptron_sbox.setRange(2,10)
-        # self.num_Hperceptron_sbox.setStatusTip('Setting number of hidden perceptrons as ...')
-
-        # perceptron_box.addWidget(num_Hperceptron_label,3)
-        # perceptron_box.addWidget(self.num_Hperceptron_sbox,1)
 
         # learning rate & split section
         learning_rate_label = QLabel("Learning Rate :")
@@ -141,11 +132,9 @@ class MultiPerceptronView(QWidget):
         # converge condition section 
         converge_condition_label = QLabel("Converge Condition :")
         
-        self.training_times_cbox = QCheckBox("Training Times")
-        self.training_times_cbox.setChecked(False)
-        self.training_times_cbox.stateChanged.connect(self.cbox_change)
+        training_times_label = QLabel("Maximum Training times :")
         self.training_times_text = QLineEdit()
-        self.training_times_text.setStatusTip('Using training times as converge condition')
+        self.training_times_text.setStatusTip('Using training times as converge condition, default = 3000')
 
         self.recognition_cbox = QCheckBox("Recognition")
         self.recognition_cbox.setChecked(False)
@@ -154,7 +143,7 @@ class MultiPerceptronView(QWidget):
         self.recognition_text.setStatusTip('If training recognition over than ...')
 
         item_hbox = QHBoxLayout()
-        item_hbox.addWidget(self.training_times_cbox,3)
+        item_hbox.addWidget(training_times_label,3)
         item_hbox.addWidget(self.training_times_text,3)
         item_hbox.addStretch(1)
         item_hbox.addWidget(self.recognition_cbox,3)
@@ -179,7 +168,6 @@ class MultiPerceptronView(QWidget):
         optimized_box.addLayout(option_hbox)
     
         # fit all layout in
-        # vbox.addLayout(perceptron_box)
         vbox.addLayout(learning_spilt_box)
         vbox.addLayout(converge_condition_box)
         vbox.addLayout(optimized_box)
@@ -308,6 +296,7 @@ class MultiPerceptronView(QWidget):
     def load_file(self):
         self.file_name = str(self.file_cb.currentText())
         self.classifier.load_file_info(self.file_name)
+        # plot
         if self.classifier.dim == 2:
             self.draw_points("all")
         else:
@@ -317,14 +306,11 @@ class MultiPerceptronView(QWidget):
             QMessageBox.about(self, "Warning", "Exist more than 2 dimension, drawing failed.")
     
         self.update_file_info()
-        # self.update_initial_weight()
-        # self.draw_points("all")
 
         # setting panel
         self.learning_rate_text.setText("0.8")
         self.propotion_of_test_text.setText("33")
-        self.training_times_cbox.setChecked(True)
-        self.training_times_text.setText("1000")
+        self.training_times_text.setText("3000")
         self.recognition_cbox.setChecked(False)
         self.pocket_cbox.setChecked(False)
         self.momentum_cbox.setChecked(False)
@@ -347,26 +333,16 @@ class MultiPerceptronView(QWidget):
         if self.propotion_of_test_text.text() == "":
             self.propotion_of_test_text.setText("33")
 
-        if (not self.training_times_cbox.isChecked()) and (not self.recognition_cbox.isChecked()):
-            QMessageBox.about(self, "Warning", "No converge condition was set, set recognition boundary as 0.8")
-            self.recognition_cbox.setChecked(True)
-            self.recognition_text.setText("0.8")
-            self.recognition_boundary = 0.8
-            self.training_times = 500000
-        else:
-            if self.training_times_cbox.isChecked():
-                if self.training_times_text.text() == "":
-                    self.training_times_text.setText("1000")
-                self.training_times = int(self.training_times_text.text())
-            else:
-                self.training_times = 500000
+        if self.training_times_text.text() == "":
+            self.training_times_text.setText("3000")
+        self.training_times = int(self.training_times_text.text())
 
-            if self.recognition_cbox.isChecked():
-                if self.recognition_text.text() == "":
-                    self.recognition_text.setText("0.9")
-                self.recognition_boundary = float(self.recognition_text.text())
-            else:
-                self.recognition_boundary = 0
+        if self.recognition_cbox.isChecked():
+            if self.recognition_text.text() == "":
+                self.recognition_text.setText("0.8")
+            self.recognition_boundary = float(self.recognition_text.text())
+        else:
+            self.recognition_boundary = 0
 
         # assign value
         self.learning_rate = float(self.learning_rate_text.text())
@@ -382,7 +358,6 @@ class MultiPerceptronView(QWidget):
     
     @pyqtSlot()
     def cbox_change(self):
-        self.training_times_text.setEnabled(self.training_times_cbox.isChecked())
         self.recognition_text.setEnabled(self.recognition_cbox.isChecked())
 
     @pyqtSlot()
@@ -406,48 +381,48 @@ class MultiPerceptronView(QWidget):
 
     @pyqtSlot()
     def start_training(self):
+        # start training
         self.classifier.do_training()
-        # print(self.classifier.history_weight)
-        # print(len(self.classifier.history_weight))
-        # print(len(self.classifier.history_weight[0]) - 2)
+
+        # plot
         if self.classifier.dim == 2:
             self.drawer = Drawer(self.canvas, self.ax, self.training_x, self.training_y, self.classifier.history_weight, self.color)
+            self.drawer.setMode(0)
             self.drawer.start()     
             self.drawer.finish.connect(self.update_training_result)
-            # print(self.classifier.output_pers[0].weight)
         else:
             self.update_training_result()
-        # self.update_training_result()
-        # self.weight_result, self.training_times_result, proc_weight = support.do_training(self.feature_train, self.label_train, self.individual_label, self.weight, self.learning_rate, self.training_times)
-        # self.drawer = Drawer(self.canvas, self.ax, self.feature, proc_weight)
-        # self.drawer.start()  
-        # self.drawer.finish.connect(self.update_training_result)
         
         self.start_training_btn.setEnabled(False)
 
     @pyqtSlot()
     def update_training_result(self):
+        # get recognition & rmse
         self.classifier.get_recognition(0)
-        # self.recog_train = support.get_recognition(self.feature_train, self.label_train, self.weight_result, self.individual_label)
-        # weight_res = [ round(w,3) for w in self.weight]
+        rmse = self.classifier.get_rmse()
+
         # set GUI
-        # self.weight_result_text.setText(str(weight_res))
         self.training_recognition_text.setText(str(self.classifier.training_recog * 100))
+        self.training_rmse_text.setText(str(rmse))
         self.training_times_result_text.setText(str(self.classifier.run))
         self.load_testing_data_btn.setEnabled(True)
         self.redo_btn.setEnabled(True)
 
     @pyqtSlot()
     def start_testing(self):
-        # plot line
-        # min_x1, max_x1 = min(self.feature[0])-0.5, max(self.feature[0])+0.5
-        # self.ax.plot([min_x1, max_x1], [support.find_x2(self.weight[0], self.weight[1], self.weight[2], min_x1), support.find_x2(self.weight[0], self.weight[1], self.weight[2], max_x1)], color='orange', linewidth=2)
-        # self.canvas.draw()
-        # # get recognition
+        # plot
+        if self.classifier.dim == 2:
+            self.drawer.resetCoordinate(self.testing_x, self.testing_y) 
+            self.drawer.setMode(1)
+            self.drawer.start()
+
+        # get recognition & rmse
         self.classifier.get_recognition(1)
+        rmse = self.classifier.get_rmse()
+        
+        # set GUI
         self.testing_recognition_text.setText(str(self.classifier.testing_recog * 100))
-        # self.recog_test = support.get_recognition(self.feature_test, self.label_test, self.weight_result, self.individual_label)
-        # # set GUI
+        self.testing_rmse_text.setText(str(rmse))
         self.confirm_btn.setEnabled(True)
         self.confirm_btn.setText("Redo Again")
         self.load_training_data_btn.setEnabled(False)
@@ -507,13 +482,13 @@ class MultiPerceptronView(QWidget):
                 index += 1
             self.canvas.draw()
         elif(mode == "testing"):
-            point_x, point_y = support.get_seperate_points(self.classifier.testing_instances, self.classifier.testing_labels)
-            boundary_x, boundary_y = support.get_boudary_of_axis(point_x, point_y)
+            self.testing_x, self.testing_y = support.get_seperate_points(self.classifier.testing_instances, self.classifier.testing_labels)
+            boundary_x, boundary_y = support.get_boudary_of_axis(self.testing_x, self.testing_y)
             self.ax.set_title("Testing data")
             self.ax.set_xlim(boundary_x[0] - 0.5, boundary_x[1] + 0.5)
             self.ax.set_ylim(boundary_y[0] - 0.5, boundary_y[1] + 0.5)
             index = 0
-            for x, y in zip(point_x, point_y):
+            for x, y in zip(self.testing_x, self.testing_y):
                 self.ax.scatter(x, y, c = self.color[index] , s=8)
                 index += 1
             self.canvas.draw()
@@ -551,26 +526,45 @@ class Drawer(QThread):
         self.color = color
         self.boundary_x, self.boundary_y = 0, 0
         self.num_of_lines = len(self.history_weight[0]) - 2
+        self.mode = 0
 
-    def update_coordinate(self, old_x, old_y, weights):
-        new_x, new_y = deepcopy(old_x), deepcopy(old_y)
-        for xs, ys in zip(new_x, new_y):
-            for i in range(len(xs)):
-                real_input = np.array([-1, xs[i], ys[i]])
-                vx, vy = np.sum(weights[0] * real_input), np.sum(weights[1] * real_input)
-                xs[i] = 1 / (1 + math.exp(-1 * vx))
-                ys[i] = 1 / (1 + math.exp(-1 * vy))
-        return new_x, new_y
-
-    def find_y(self, weights, x):
-        weight = weights[0]
-        return (np.asscalar(weight[0]) - np.asscalar(weight[1]) * x) / np.asscalar(weight[2])
+    def setMode(self, mode):
+        self.mode = mode
+    
+    def resetCoordinate(self, x, y):
+        self.x, self.y = x, y
 
     def run(self):
-        for weights in self.history_weight:
+        # draw training
+        if self.mode == 0:
+            for weights in self.history_weight:
+                print("draw")
+                self.ax.clear()
+                # update new x, y based on weight
+                updated_x, updated_y = support.update_coordinate(self.x, self.y, weights)
+                boundary_x, boundary_y = support.get_boudary_of_axis(updated_x, updated_y)
+
+                x_spacing = (boundary_x[1] - boundary_x[0]) / 10
+                y_spacing = (boundary_y[1] - boundary_y[0]) / 10
+                self.ax.set_xlim(boundary_x[0] - x_spacing, boundary_x[1] + x_spacing)
+                self.ax.set_ylim(boundary_y[0] - y_spacing, boundary_y[1] + y_spacing)
+                
+                # plot 
+                index = 0
+                for x, y in zip(updated_x, updated_y):
+                    self.ax.scatter(x, y, c = self.color[index] , s=8)
+                    index += 1
+
+                for line in range(self.num_of_lines):
+                    line += 1
+                    self.ax.plot([boundary_x[0] - x_spacing, boundary_x[1] + x_spacing], [support.find_y(weights[-1 * line], boundary_x[0] - x_spacing), support.find_y(weights[-1 * line], boundary_x[1] + x_spacing)])
+                plt.pause(0.1)
+                self.canvas.draw()
+        else:
             self.ax.clear()
             # update new x, y based on weight
-            updated_x, updated_y = self.update_coordinate(self.x, self.y, weights)
+            updated_x, updated_y = 0, 0
+            updated_x, updated_y = support.update_coordinate(self.x, self.y, self.history_weight[-1])
             boundary_x, boundary_y = support.get_boudary_of_axis(updated_x, updated_y)
 
             x_spacing = (boundary_x[1] - boundary_x[0]) / 10
@@ -585,43 +579,10 @@ class Drawer(QThread):
                 index += 1
 
             for line in range(self.num_of_lines):
-                self.ax.plot([boundary_x[0] - x_spacing, boundary_x[1] + x_spacing], [self.find_y(weights[-1 * line], boundary_x[0] - x_spacing), self.find_y(weights[-1 * line], boundary_x[1] + x_spacing)])
-            plt.pause(0.1)
+                line += 1
+                self.ax.plot([boundary_x[0] - x_spacing, boundary_x[1] + x_spacing], [support.find_y(self.history_weight[-1][-1 * line], boundary_x[0] - x_spacing), support.find_y(self.history_weight[-1][-1 * line], boundary_x[1] + x_spacing)], c=self.color[line-1])
             self.canvas.draw()
-        
-        # just draw for the last time
-        # self.ax.clear()
-        # self.updated_x, self.updated_y = self.update_coordinate(self.updated_x, self.updated_y, self.history_weight[-1])
-        # boundary_x, boundary_y = support.get_boudary_of_axis(self.updated_x, self.updated_y)
-
-        # x_spacing, y_spacing = (boundary_x[1] - boundary_x[0]) / 10, (boundary_y[1] - boundary_y[0]) / 10
-        # self.ax.set_xlim(boundary_x[0] - x_spacing, boundary_x[1] + x_spacing)
-        # self.ax.set_ylim(boundary_y[0] - y_spacing, boundary_y[1] + y_spacing)
-
-        # index = 0
-        # for x, y in zip(self.updated_x, self.updated_y):
-        #     self.ax.scatter(x, y, c = self.color[index] , s=8)
-        #     index += 1
-        
-        # for line in range(self.num_of_lines):
-        #     line += 1
-        #     self.ax.plot([boundary_x[0] - x_spacing, boundary_x[1] + x_spacing], [self.find_y(self.history_weight[-1][-1 * line], boundary_x[0] - x_spacing), self.find_y(self.history_weight[-1][-1 * line], boundary_x[1] + x_spacing)])
-
-        # self.canvas.draw()
-        # trash
-        # plt.ion()
-        # while len(self.proc) != 0:
-        #     weight = self.proc[0]
-        #     try:
-        #         self.ax.lines.pop(0)
-        #     except Exception:
-        #         pass
-        #     # lines = self.ax.plot([self.min_x1, self.max_x1], [support.find_x2(weight[0], weight[1], weight[2], self.min_x1), support.find_x2(weight[0], weight[1], weight[2], self.max_x1)], color='orange', linewidth=2)
-        #     self.canvas.draw()
-        #     plt.pause(0.1)
-        #     del self.proc[0]
-        # plt.ioff()
-        # plt.show()
+        print("done")
         self.finish.emit()
 
 
