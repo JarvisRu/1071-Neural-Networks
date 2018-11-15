@@ -79,7 +79,6 @@ class MultiClassifier():
         self.pro_of_test = pro_of_test
         self.isPocket = isPocket
         self.isMomentum = isMomentum
-        print("Mom: ", self.isMomentum)
         
     def split_train_test_data(self):
         propotion = (int)(self.pro_of_test * self.num_of_data)
@@ -161,7 +160,6 @@ class MultiClassifier():
 
         while (self.run < self.training_times) and (not is_converge) and (not over_boundary):
             self.run += 1
-            print(self.run)
             is_converge = True
 
             for instance, expected_ans in zip(self.training_instances, self.training_labels):

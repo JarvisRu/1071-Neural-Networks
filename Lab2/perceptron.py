@@ -51,7 +51,6 @@ class Perceptron():
         if not momentum:
             self.__adjust_weight_normal(input)
         else:
-            print("into")
             self.__adjust_weight_momentum(input)
 
     def __adjust_weight_normal(self, input):

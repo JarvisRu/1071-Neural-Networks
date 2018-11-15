@@ -538,7 +538,6 @@ class Drawer(QThread):
         # draw training
         if self.mode == 0:
             for weights in self.history_weight:
-                print("draw")
                 self.ax.clear()
                 # update new x, y based on weight
                 updated_x, updated_y = support.update_coordinate(self.x, self.y, weights)
@@ -582,7 +581,6 @@ class Drawer(QThread):
                 line += 1
                 self.ax.plot([boundary_x[0] - x_spacing, boundary_x[1] + x_spacing], [support.find_y(self.history_weight[-1][-1 * line], boundary_x[0] - x_spacing), support.find_y(self.history_weight[-1][-1 * line], boundary_x[1] + x_spacing)], c=self.color[line-1])
             self.canvas.draw()
-        print("done")
         self.finish.emit()
 
 
