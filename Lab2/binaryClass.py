@@ -62,18 +62,17 @@ if __name__ == '__main__':
     
     output_pers = []
     p3 = perceptron.Perceptron(dim)
-    p3.set_weight([0.5, 0.4, 0.8])
     output_pers.append(p3)
 
     # do training
     training_times = 5000
     boundary = 0.8
     run = 0
-    is_converge = False
+    is_correct = False
     over_boundary = False
-    while (run < training_times) and (not is_converge) and (not over_boundary):
+    while (run < training_times) and (not is_correct) and (not over_boundary):
         run += 1
-        is_converge = True
+        is_correct = True
         for instance, expected_ans in zip(instances, label):
             # feedforward
             hidden_output = []
@@ -85,10 +84,10 @@ if __name__ == '__main__':
 
             tmp_result = 1 if output_output[0] >= 0.5 else 0
             if tmp_result != expected_ans:
-                is_converge = False
+                is_correct = False
 
             # back Propagation - compute local gradient
-            if not is_converge:
+            if not is_correct:
                 output_pers[0].compute_local_gradient_for_output(expected_ans)
 
                 index = 0
@@ -96,11 +95,11 @@ if __name__ == '__main__':
                     index += 1
                     hidden_per.compute_local_gradient_for_hidden(output_pers, index)
 
-                # back Propagation - adjust weight
+                # back Propagation - adjust weight, without momentum
                 for hidden_per in hidden_pers:
-                    hidden_per.adjust_weight(instance)
+                    hidden_per.adjust_weight(instance, False)
                 for output_per in output_pers:
-                    output_per.adjust_weight(hidden_output)
+                    output_per.adjust_weight(hidden_output, False)
                 
                 # training again with new weight
                 if get_recognition(instances, label, hidden_pers, output_pers) > boundary:

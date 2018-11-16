@@ -5,7 +5,7 @@ import sys
 import math
 import matplotlib.pyplot as plt
 from PyQt5.QtCore import Qt, pyqtSlot, QThread, pyqtSignal
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QSpinBox, QComboBox, QCheckBox)
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QSpinBox, QComboBox, QCheckBox, QTextBrowser)
 from matplotlib.backends.backend_qt5agg import FigureCanvas 
 from matplotlib.figure import Figure
 from copy import deepcopy
@@ -229,19 +229,25 @@ class MultiPerceptronView(QWidget):
     def __set_result_box_UI(self):
         self.__result_box = QGroupBox('Result')
         vbox = QVBoxLayout()
-        weight_box = QHBoxLayout()
+        weight_box = QVBoxLayout()
         tranining_times_result_box = QHBoxLayout()
         training_recognition_box = QHBoxLayout()
         training_rmse_box = QHBoxLayout()
         testing_recognition_box = QHBoxLayout()
-        testing_rmse_box = QHBoxLayout()
 
-        weight_result_label = QLabel("Weight : ")
-        weight_result_label.setAlignment(Qt.AlignCenter)
-        self.weight_result_text = QLabel(" -- ")
-        self.weight_result_text.setAlignment(Qt.AlignCenter)
-        weight_box.addWidget(weight_result_label, 3)
-        weight_box.addWidget(self.weight_result_text, 2)
+
+        hidden_weight_result_label = QLabel("Hidden Weight : ")
+        hidden_weight_result_label.setAlignment(Qt.AlignCenter)
+        self.hidden_weight_result = QTextBrowser()
+        self.hidden_weight_result.setMaximumHeight(25)
+        output_weight_result_label = QLabel("Output Weight : ")
+        output_weight_result_label.setAlignment(Qt.AlignCenter)
+        self.output_weight_result = QTextBrowser()
+        self.output_weight_result.setMaximumHeight(25)
+        weight_box.addWidget(hidden_weight_result_label, 2)
+        weight_box.addWidget(self.hidden_weight_result, 1)
+        weight_box.addWidget(output_weight_result_label, 2)
+        weight_box.addWidget(self.output_weight_result, 1)
 
         training_times_result_label = QLabel("Training times : ")
         training_times_result_label.setAlignment(Qt.AlignCenter)
@@ -271,19 +277,11 @@ class MultiPerceptronView(QWidget):
         testing_recognition_box.addWidget(testing_recongition_label, 3)
         testing_recognition_box.addWidget(self.testing_recognition_text, 2)
 
-        testing_rmse_label = QLabel("RMSE of testing : ")
-        testing_rmse_label.setAlignment(Qt.AlignCenter)
-        self.testing_rmse_text = QLabel(" -- ")
-        self.testing_rmse_text.setAlignment(Qt.AlignCenter)
-        testing_rmse_box.addWidget(testing_rmse_label, 3)
-        testing_rmse_box.addWidget(self.testing_rmse_text, 2)
-
         vbox.addLayout(weight_box)
         vbox.addLayout(tranining_times_result_box)
         vbox.addLayout(training_recognition_box)
         vbox.addLayout(training_rmse_box)
         vbox.addLayout(testing_recognition_box)
-        vbox.addLayout(testing_rmse_box)
         self.__result_box.setLayout(vbox)
 
     # ------------------------------------------------------------------
@@ -291,6 +289,14 @@ class MultiPerceptronView(QWidget):
     def load_file(self):
         self.file_name = str(self.file_cb.currentText())
         self.classifier.load_file_info(self.file_name)
+        self.less = True if len(self.classifier.instances) < 20 else False
+
+        if self.less:
+            QMessageBox.about(self, "Warning", "Less than 20 instances, regard all data as training data.")
+            self.propotion_of_test_text.setEnabled(False)
+        else:
+            self.propotion_of_test_text.setEnabled(True)
+
         # plot
         if self.classifier.dim == 2:
             self.draw_points("all")
@@ -324,11 +330,14 @@ class MultiPerceptronView(QWidget):
         if self.learning_rate_text.text() == "":
             self.learning_rate_text.setText("0.8")
 
-        if self.propotion_of_test_text.text() == "":
+        if (self.propotion_of_test_text.text() == "") and (not self.less):
             self.propotion_of_test_text.setText("33")
 
         if self.training_times_text.text() == "":
-            self.training_times_text.setText("3000")
+            if self.recognition_cbox.isChecked():
+                self.training_times_text.setText("50000")
+            else:
+                self.training_times_text.setText("3000")
         self.training_times = int(self.training_times_text.text())
 
         if self.recognition_cbox.isChecked():
@@ -340,7 +349,10 @@ class MultiPerceptronView(QWidget):
 
         # assign value
         self.learning_rate = float(self.learning_rate_text.text())
-        self.pro_of_test = float(int(self.propotion_of_test_text.text())/100)
+        if self.less:
+            self.pro_of_test = 0
+        else:
+            self.pro_of_test = float(int(self.propotion_of_test_text.text())/100)
         self.isMomentum = True if (self.momentum_cbox.isChecked()) else False
 
         self.update_classifier()
@@ -369,7 +381,6 @@ class MultiPerceptronView(QWidget):
         self.load_testing_data_btn.setEnabled(False)
         self.start_training_btn.setEnabled(False)
         self.redo_btn.setEnabled(False)
-        self.load_testing_data_btn.setEnabled(True)
         self.start_testing_btn.setEnabled(True)
 
     @pyqtSlot()
@@ -395,10 +406,15 @@ class MultiPerceptronView(QWidget):
         rmse = self.classifier.get_rmse()
 
         # set GUI
+        for hidden_per in self.classifier.hidden_pers:
+            self.hidden_weight_result.append(str(hidden_per.weight))
+        for output_per in self.classifier.output_pers:
+            self.output_weight_result.append(str(output_per.weight))
         self.training_recognition_text.setText(str(self.classifier.training_recog * 100))
         self.training_rmse_text.setText(str(rmse))
         self.training_times_result_text.setText(str(self.classifier.run))
-        self.load_testing_data_btn.setEnabled(True)
+        if not self.less:
+            self.load_testing_data_btn.setEnabled(True)
         self.redo_btn.setEnabled(True)
 
     @pyqtSlot()
@@ -411,11 +427,9 @@ class MultiPerceptronView(QWidget):
 
         # get recognition & rmse
         self.classifier.get_recognition(1)
-        rmse = self.classifier.get_rmse()
         
         # set GUI
         self.testing_recognition_text.setText(str(self.classifier.testing_recog * 100))
-        self.testing_rmse_text.setText(str(rmse))
         self.confirm_btn.setEnabled(True)
         self.confirm_btn.setText("Redo Again")
         self.load_training_data_btn.setEnabled(False)
@@ -433,10 +447,11 @@ class MultiPerceptronView(QWidget):
         self.load_testing_data_btn.setEnabled(False)
         self.start_testing_btn.setEnabled(False)
         self.redo_btn.setEnabled(False)
+        self.hidden_weight_result.clear()
+        self.output_weight_result.clear()
         self.training_recognition_text.setText(" -- ")
         self.training_rmse_text.setText(" -- ")
         self.training_times_result_text.setText(" -- ")
-        self.weight_result_text.setText(" -- ")
 
     # ------------------------------------------------------------------
     def update_file_info(self):
@@ -487,24 +502,12 @@ class MultiPerceptronView(QWidget):
             self.canvas.draw()
 
     def reset_result_text(self):
-        self.weight_result_text.setText(" -- ")
+        self.hidden_weight_result.clear()
+        self.output_weight_result.clear()
         self.training_times_result_text.setText(" -- ")
         self.training_recognition_text.setText(" -- ")
         self.training_rmse_text.setText(" -- ")
         self.testing_recognition_text.setText(" -- ")
-        self.testing_rmse_text.setText(" -- ")
-
-        
-
-# Class as Base window, create MultiPerceptronView
-class BaseWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.resize(750, 500)
-        self.move(350,50)
-        self.setWindowTitle('Neural Networks Lab2 - Multilayer Perceptron')
-        self.statusBar()
-        self.setCentralWidget(MultiPerceptronView())
 
 # Class for drawing 
 class Drawer(QThread):
@@ -536,6 +539,7 @@ class Drawer(QThread):
                 updated_x, updated_y = support.update_coordinate(self.x, self.y, weights)
                 boundary_x, boundary_y = support.get_boudary_of_axis(updated_x, updated_y)
 
+                self.ax.set_title("Training data")
                 x_spacing = (boundary_x[1] - boundary_x[0]) / 10
                 y_spacing = (boundary_y[1] - boundary_y[0]) / 10
                 self.ax.set_xlim(boundary_x[0] - x_spacing, boundary_x[1] + x_spacing)
@@ -554,6 +558,7 @@ class Drawer(QThread):
                 self.canvas.draw()
         else:
             self.ax.clear()
+            self.ax.set_title("Testing data")
             # update new x, y based on weight
             updated_x, updated_y = 0, 0
             updated_x, updated_y = support.update_coordinate(self.x, self.y, self.history_weight[-1])
@@ -575,6 +580,17 @@ class Drawer(QThread):
                 self.ax.plot([boundary_x[0] - x_spacing, boundary_x[1] + x_spacing], [support.find_y(self.history_weight[-1][-1 * line], boundary_x[0] - x_spacing), support.find_y(self.history_weight[-1][-1 * line], boundary_x[1] + x_spacing)], c=self.color[line-1])
             self.canvas.draw()
         self.finish.emit()
+        
+# Class as Base window, create MultiPerceptronView
+class BaseWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.resize(750, 550)
+        self.move(350,50)
+        self.setWindowTitle('Neural Networks Lab2 - Multilayer Perceptron')
+        self.statusBar()
+        self.setCentralWidget(MultiPerceptronView())
+
 
 
 if __name__ == '__main__':

@@ -92,11 +92,11 @@ if __name__ == '__main__':
     training_times = 2000
     boundary = 0.8
     run = 0
-    is_converge = False
+    is_correct = False
     over_boundary = False
-    while (run < training_times) and (not is_converge) and (not over_boundary):
+    while (run < training_times) and (not is_correct) and (not over_boundary):
         run += 1
-        is_converge = True
+        is_correct = True
         for instance, expected_ans in zip(instances, label):
             # feedforward
             hidden_output = []
@@ -109,14 +109,14 @@ if __name__ == '__main__':
             tmp_result = regularization_output(output_output)
             for i in range(len(tmp_result)):
                 if i != expected_ans and tmp_result[i] == 1:
-                    is_converge = False
+                    is_correct = False
                     break
                 if i == expected_ans and tmp_result[i] != 1:
-                    is_converge = False
+                    is_correct = False
                     break
 
             # back Propagation - compute local gradient
-            if not is_converge:
+            if not is_correct:
                 # print("into Propagation")
                 index = 0
                 d = 0
@@ -129,11 +129,11 @@ if __name__ == '__main__':
                     index += 1
                     hidden_per.compute_local_gradient_for_hidden(output_pers, index)
 
-                # back Propagation - adjust weight
+                # back Propagation - adjust weight, without momentum
                 for hidden_per in hidden_pers:
-                    hidden_per.adjust_weight(instance)
+                    hidden_per.adjust_weight(instance, False)
                 for output_per in output_pers:
-                    output_per.adjust_weight(hidden_output)
+                    output_per.adjust_weight(hidden_output, False)
                 
                 # retraining again with new weight
                 if get_recognition_multi(instances, label, hidden_pers, output_pers) > boundary:

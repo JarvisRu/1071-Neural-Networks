@@ -156,11 +156,11 @@ class MultiClassifier():
         self.run = 0
         self.rmse = []
         self.previous_recog = 0.0
-        is_converge, over_boundary = False, False
+        is_correct, over_boundary = False, False
 
-        while (self.run < self.training_times) and (not is_converge) and (not over_boundary):
+        while (self.run < self.training_times) and (not is_correct) and (not over_boundary):
             self.run += 1
-            is_converge = True
+            is_correct = True
 
             for instance, expected_ans in zip(self.training_instances, self.training_labels):
                 # feedforward
@@ -174,10 +174,10 @@ class MultiClassifier():
                 tmp_result = 1 if output_output[0] >= 0.5 else 0
                 self.__compute_rmse(tmp_result, expected_ans)
                 if tmp_result != expected_ans:
-                    is_converge = False
+                    is_correct = False
 
                 # back Propagation - compute local gradient
-                if not is_converge:
+                if not is_correct:
                     self.output_pers[0].compute_local_gradient_for_output(expected_ans)
 
                     index = 0
@@ -212,11 +212,11 @@ class MultiClassifier():
 
         self.run = 0
         self.rmse = []
-        is_converge, over_boundary = False, False
+        is_correct, over_boundary = False, False
         
-        while (self.run < self.training_times) and (not is_converge) and (not over_boundary):
+        while (self.run < self.training_times) and (not is_correct) and (not over_boundary):
             self.run += 1
-            is_converge = True
+            is_correct = True
 
             for instance, expected_ans in zip(self.training_instances, self.training_labels):
                 # feedforward
@@ -231,14 +231,14 @@ class MultiClassifier():
                 self.__compute_rmse(tmp_result, expected_ans)
                 for i in range(len(tmp_result)):
                     if i != expected_ans and tmp_result[i] == 1:
-                        is_converge = False
+                        is_correct = False
                         break
                     if i == expected_ans and tmp_result[i] != 1:
-                        is_converge = False
+                        is_correct = False
                         break
 
                 # back Propagation - compute local gradient
-                if not is_converge:
+                if not is_correct:
                     index, d = 0, 0
                     for output_per in self.output_pers:
                         d = 1 if index == expected_ans else 0
