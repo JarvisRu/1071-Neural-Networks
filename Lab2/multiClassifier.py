@@ -17,7 +17,8 @@ class MultiClassifier():
         self.training_times = 0
         self.hasBoundary, self.recognition_boundary = False, 0
         self.learning_rate, self.pro_of_test = 0.0, 0.0
-        self.isPocket, self.isMomentum = False, False
+        self.isMomentum = False
+        self.previous_recog = 0.0
 
         self.training_instances, self.training_labels = [], []
         self.testing_instances, self.testing_labels = [], []
@@ -68,7 +69,7 @@ class MultiClassifier():
             self.individual_instances[label].append(instance)
         return self.individual_instances
 
-    def initialize(self, training_times, recognition_boundary, learning_rate, pro_of_test, isPocket, isMomentum):
+    def initialize(self, training_times, recognition_boundary, learning_rate, pro_of_test, isMomentum):
         self.training_times = training_times
         if recognition_boundary == 0:
             self.hasBoundary = False
@@ -77,7 +78,6 @@ class MultiClassifier():
             self.recognition_boundary = recognition_boundary 
         self.learning_rate = learning_rate
         self.pro_of_test = pro_of_test
-        self.isPocket = isPocket
         self.isMomentum = isMomentum
         
     def split_train_test_data(self):
@@ -154,8 +154,8 @@ class MultiClassifier():
         self.__new_perceptorns()
 
         self.run = 0
-        self.compute_rmse_times = 0
         self.rmse = []
+        self.previous_recog = 0.0
         is_converge, over_boundary = False, False
 
         while (self.run < self.training_times) and (not is_converge) and (not over_boundary):
@@ -346,4 +346,3 @@ class MultiClassifier():
                     tmp += (predict[i] - 1)**2
             tmp /= 2
             self.rmse.append(tmp)
-

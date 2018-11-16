@@ -154,15 +154,10 @@ class MultiPerceptronView(QWidget):
         # optimized section 
         optimized_label = QLabel("Optimized :")
 
-        self.pocket_cbox = QCheckBox("Pocket")
-        self.pocket_cbox.setStatusTip('Using pocket algorithm')
-
         self.momentum_cbox = QCheckBox("Momentum")
-        self.momentum_cbox.setStatusTip('Using momentum to optimize learning')
+        self.momentum_cbox.setStatusTip('Using momentum to optimize learning, set alpha as 0.9.')
 
         option_hbox = QHBoxLayout()
-        option_hbox.addWidget(self.pocket_cbox,3)
-        option_hbox.addStretch(1)
         option_hbox.addWidget(self.momentum_cbox,3)
         converge_condition_box.addWidget(optimized_label)
         optimized_box.addLayout(option_hbox)
@@ -204,7 +199,7 @@ class MultiPerceptronView(QWidget):
         self.redo_btn.clicked.connect(self.redo)
 
         self.start_training_btn = QPushButton("Start Training")
-        self.start_training_btn.setStatusTip('Start training data with parameter above.')
+        self.start_training_btn.setStatusTip('Start training data with parameters above.')
         self.start_training_btn.setEnabled(False)
         self.start_training_btn.clicked.connect(self.start_training)
 
@@ -312,7 +307,6 @@ class MultiPerceptronView(QWidget):
         self.propotion_of_test_text.setText("33")
         self.training_times_text.setText("3000")
         self.recognition_cbox.setChecked(False)
-        self.pocket_cbox.setChecked(False)
         self.momentum_cbox.setChecked(False)
         self.confirm_btn.setText("Confirm")
         # control & result panel
@@ -347,7 +341,6 @@ class MultiPerceptronView(QWidget):
         # assign value
         self.learning_rate = float(self.learning_rate_text.text())
         self.pro_of_test = float(int(self.propotion_of_test_text.text())/100)
-        self.isPocket = True if (self.pocket_cbox.isChecked()) else False
         self.isMomentum = True if (self.momentum_cbox.isChecked()) else False
 
         self.update_classifier()
@@ -454,7 +447,7 @@ class MultiPerceptronView(QWidget):
         self.number_of_instances_text.setText(str(self.classifier.num_of_data))
 
     def update_classifier(self):
-        self.classifier.initialize(self.training_times, self.recognition_boundary, self.learning_rate, self.pro_of_test, self.isPocket, self.isMomentum)
+        self.classifier.initialize(self.training_times, self.recognition_boundary, self.learning_rate, self.pro_of_test, self.isMomentum)
         self.classifier.split_train_test_data()
         
     def draw_points(self, mode):
