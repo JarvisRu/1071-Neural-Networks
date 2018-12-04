@@ -132,7 +132,8 @@ class HopfieldView(QWidget):
         hbox.addWidget(self.view_training_spin)
 
         vbox.addLayout(hbox, 1)
-        vbox.addLayout(self.grid_training_box, 5)
+        vbox.addLayout(self.grid_training_box, 4)
+        vbox.addStretch(1)
         self.__training_box.setLayout(vbox)
         
     def __set_result_box_UI(self):
@@ -202,19 +203,22 @@ class HopfieldView(QWidget):
                 self.view_association_spin.setEnabled(True)
                 self.view_association_spin.setRange(0, self.hopfield.num_of_testing)
                 self.step_slider.setValue(0)
-                self.__initial_figure()
                 # start association
                 self.hopfield.start_association()
+                # draw figure
+                self.__initial_figure()
 
     @pyqtSlot()
     def switch_training_view(self):
         target_view = self.view_training_spin.value()
+        self.view_association_spin.setValue(target_view)
         self.__draw_training_view(target_view)
 
     @pyqtSlot()
     def switch_association_view(self):
         target_view = self.view_association_spin.value()
         if target_view != 0:
+            self.view_training_spin.setValue(target_view)
             self.__draw_association_view(target_view)
             self.step_slider.setValue(0)
             self.step_slider.setRange(0, len(self.hopfield.record[target_view - 1])-1)
