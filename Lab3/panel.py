@@ -4,13 +4,14 @@ import numpy as np
 import sys
 import math
 from PyQt5.QtCore import Qt, pyqtSlot
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QMessageBox, QSpinBox, QComboBox)
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QGroupBox, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel, QPushButton, QMessageBox, QSpinBox, QComboBox, QSlider)
 from copy import deepcopy
 
 class HopfieldView(QWidget):
     def __init__(self):
         super().__init__()
         self.hopfield = hopfield.Hopfield()
+        self.training_file_name, self.testing_file_name = "", "" 
         self.__initUI()
 
     def __initUI(self):
@@ -21,13 +22,13 @@ class HopfieldView(QWidget):
         self.__set_file_box_UI()
         self.__set_dataInfo_box_UI()
 
-        self.__set_testing_box_UI()
+        self.__set_training_box_UI()
         self.__set_result_box_UI()
 
         self.__file_layout.addWidget(self.__file_box, 1)
         self.__file_layout.addWidget(self.__dataInfo_box, 2)
 
-        self.__figure_layout.addWidget(self.__testing_box, 1)
+        self.__figure_layout.addWidget(self.__training_box, 1)
         self.__figure_layout.addWidget(self.__result_box, 1)
 
         self.__window_layout.addLayout(self.__file_layout, 1)
@@ -50,8 +51,8 @@ class HopfieldView(QWidget):
         self.testing_file_cb.addItems(support.find_testing_dataset())
         self.testing_file_cb.setStatusTip("Please select a file as testing dataset")
 
-        self.file_load_btn = QPushButton('Load File', self)
-        self.file_load_btn.setStatusTip("Load file and update file information")
+        self.file_load_btn = QPushButton('Load File + Start Association', self)
+        self.file_load_btn.setStatusTip("After loading file and updating file information, start association.")
         self.file_load_btn.clicked.connect(self.load_both_file)
 
         hbox.addWidget(training_file_label, 1)
@@ -114,45 +115,176 @@ class HopfieldView(QWidget):
         vbox.addLayout(dim_box)
         self.__dataInfo_box.setLayout(vbox)
         
-    def __set_testing_box_UI(self):
-        self.__testing_box = QGroupBox('Testing data')
+    def __set_training_box_UI(self):
+        self.__training_box = QGroupBox('Training data')
         vbox = QVBoxLayout()
-        self.__testing_box.setLayout(vbox)
+        hbox = QHBoxLayout()
+        self.grid_training_box = QGridLayout()
+
+        view_training_label = QLabel("View Training Data :")
+        view_training_label.setAlignment(Qt.AlignCenter)
+        self.view_training_spin = QSpinBox()
+        self.view_training_spin.setEnabled(False)
+        self.view_training_spin.setValue(1)
+        self.view_training_spin.setSingleStep(1)
+        self.view_training_spin.valueChanged.connect(self.switch_training_view)
+        hbox.addWidget(view_training_label)
+        hbox.addWidget(self.view_training_spin)
+
+        vbox.addLayout(hbox, 1)
+        vbox.addLayout(self.grid_training_box, 5)
+        self.__training_box.setLayout(vbox)
         
     def __set_result_box_UI(self):
         self.__result_box = QGroupBox("Association Result")
         vbox = QVBoxLayout()
+        hbox = QHBoxLayout()
+        slider_box = QHBoxLayout()
+        self.grid_association_box = QGridLayout()
+
+        view_association_label = QLabel("View Association Result :")
+        view_association_label.setAlignment(Qt.AlignCenter)
+        self.view_association_spin = QSpinBox()
+        self.view_association_spin.setEnabled(False)
+        self.view_association_spin.setValue(0)
+        self.view_association_spin.setSingleStep(1)
+        self.view_association_spin.valueChanged.connect(self.switch_association_view)
+        hbox.addWidget(view_association_label)
+        hbox.addWidget(self.view_association_spin)
+
+        view_step_label = QLabel("View Association step by step :")
+        view_step_label.setAlignment(Qt.AlignCenter)
+        self.step_slider = QSlider(Qt.Horizontal)
+        self.step_slider.setSingleStep(1)
+        self.step_slider.setRange(0,1)
+        self.step_slider.valueChanged.connect(self.switch_association_step)
+        slider_box.addWidget(view_step_label)
+        slider_box.addWidget(self.step_slider)
+
+        vbox.addLayout(hbox, 1)
+        vbox.addLayout(self.grid_association_box, 4)
+        vbox.addLayout(slider_box, 1)
         self.__result_box.setLayout(vbox)
 
     @pyqtSlot()
     def load_both_file(self):
-        self.training_file_name = str(self.training_file_cb.currentText())
-        self.testing_file_name = str(self.testing_file_cb.currentText())
-
-        # check file
-        if support.check_file(self.training_file_name, self.testing_file_name):
-            QMessageBox.about(self, "Warning", "Different source of training and testing data, please check again.")
-            self.number_of_training_text.setText(" -- ")
-            self.number_of_testing_text.setText(" -- ")
-            self.real_dim_text.setText(" -- ")
-            self.dim_text.setText(" -- ")
+        if self.training_file_name == str(self.training_file_cb.currentText()) and self.testing_file_name == str(self.testing_file_cb.currentText()):
+            QMessageBox.about(self, "Warning", "Loading the same dataset, do nothing.")
         else:
-            self.hopfield.load_file(self.training_file_name, self.testing_file_name)
-            # update file_info
-            self.training_name_text.setText(self.training_file_name)
-            self.testing_name_text.setText(self.testing_file_name)
-            self.number_of_training_text.setText(str(self.hopfield.num_of_training))
-            self.number_of_testing_text.setText(str(self.hopfield.num_of_testing))
-            self.real_dim_text.setText(str(int(self.hopfield.rows)) + " * " + str(int(self.hopfield.cols)))
-            self.dim_text.setText(str(self.hopfield.dim) + " * 1")
+            self.training_file_name = str(self.training_file_cb.currentText())
+            self.testing_file_name = str(self.testing_file_cb.currentText())
 
+            # check file
+            if support.check_file(self.training_file_name, self.testing_file_name):
+                QMessageBox.about(self, "Warning", "Different source of training and testing data, please check again.")
+                self.number_of_training_text.setText(" -- ")
+                self.number_of_testing_text.setText(" -- ")
+                self.real_dim_text.setText(" -- ")
+                self.dim_text.setText(" -- ")
+                self.view_training_spin.setEnabled(False)
+                self.view_association_spin.setEnabled(False)
+                self.step_slider.setEnabled(False)
+                self.step_slider.setValue(0)
+            else:
+                self.hopfield.load_file(self.training_file_name, self.testing_file_name)
+                # update file_info
+                self.training_name_text.setText(self.training_file_name)
+                self.testing_name_text.setText(self.testing_file_name)
+                self.number_of_training_text.setText(str(self.hopfield.num_of_training))
+                self.number_of_testing_text.setText(str(self.hopfield.num_of_testing))
+                self.real_dim_text.setText(str(self.hopfield.rows) + " * " + str(self.hopfield.cols))
+                self.dim_text.setText(str(self.hopfield.dim) + " * 1")
+                # update figure part
+                self.view_training_spin.setValue(1)
+                self.view_training_spin.setEnabled(True)
+                self.view_training_spin.setRange(1, self.hopfield.num_of_training)
+                self.view_association_spin.setValue(0)
+                self.view_association_spin.setEnabled(True)
+                self.view_association_spin.setRange(0, self.hopfield.num_of_testing)
+                self.step_slider.setValue(0)
+                self.__initial_figure()
+                # start association
+                self.hopfield.start_association()
+
+    @pyqtSlot()
+    def switch_training_view(self):
+        target_view = self.view_training_spin.value()
+        self.__draw_training_view(target_view)
+
+    @pyqtSlot()
+    def switch_association_view(self):
+        target_view = self.view_association_spin.value()
+        if target_view != 0:
+            self.__draw_association_view(target_view)
+            self.step_slider.setValue(0)
+            self.step_slider.setRange(0, len(self.hopfield.record[target_view - 1])-1)
+        else:
+            for i in range(self.hopfield.dim):
+                self.association_rects[i].setStyleSheet("background-color: white;")
+
+    def __initial_figure(self):
+        # delete old
+        for i in reversed(range(self.grid_training_box.count())): 
+            self.grid_training_box.itemAt(i).widget().deleteLater()
+        for i in reversed(range(self.grid_association_box.count())): 
+            self.grid_association_box.itemAt(i).widget().deleteLater()
+            
+        # print new
+        self.training_rects, self.association_rects = [], []
+        for i in range(self.hopfield.rows):
+            for j in range(self.hopfield.cols):
+                item = QPushButton()
+                item.setStyleSheet("background-color: white;")
+                item.setEnabled(False)
+                self.grid_training_box.addWidget(item, i, j)
+                self.training_rects.append(item)
+
+                item2 = QPushButton()
+                item2.setStyleSheet("background-color: white;")
+                item2.setEnabled(False)
+                self.grid_association_box.addWidget(item2, i, j)
+                self.association_rects.append(item2)
+
+        self.switch_training_view()
+
+
+    def __draw_training_view(self, target):
+        target_img = self.hopfield.inputs[target - 1]
+        # print all to white first
+        for i in range(self.hopfield.dim):
+                self.training_rects[i].setStyleSheet("background-color: white;")
+        # print by value
+        for i in range(self.hopfield.dim):
+            if target_img[i] == 1:
+                self.training_rects[i].setStyleSheet("background-color: black;")
+
+    def __draw_association_view(self, target):
+        target_img = self.hopfield.record[target - 1][0]
+        # print all to white first
+        for i in range(self.hopfield.dim):
+                self.association_rects[i].setStyleSheet("background-color: white;")
+        # print by value
+        for i in range(self.hopfield.dim):
+            if target_img[i] == 1:
+                self.association_rects[i].setStyleSheet("background-color: black;")
+
+    def switch_association_step(self):
+        step = self.step_slider.value()
+        target_img = self.hopfield.record[self.view_association_spin.value() - 1][step]
+        # print all to white first
+        for i in range(self.hopfield.dim):
+                self.association_rects[i].setStyleSheet("background-color: white;")
+        # print by value
+        for i in range(self.hopfield.dim):
+            if target_img[i] == 1:
+                self.association_rects[i].setStyleSheet("background-color: black;")
 
 
 # Class as Base window, create Hopfield
 class BaseWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.resize(750, 500)
+        self.resize(770, 520)
         self.move(350,50)
         self.setWindowTitle('Neural Networks Lab3 - Hopfield')
         self.statusBar()
