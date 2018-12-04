@@ -133,7 +133,7 @@ class HopfieldView(QWidget):
 
         vbox.addLayout(hbox, 1)
         vbox.addLayout(self.grid_training_box, 4)
-        vbox.addStretch(1)
+        vbox.addStretch(2)
         self.__training_box.setLayout(vbox)
         
     def __set_result_box_UI(self):
@@ -141,6 +141,7 @@ class HopfieldView(QWidget):
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
         slider_box = QHBoxLayout()
+        recog_box = QHBoxLayout()
         self.grid_association_box = QGridLayout()
 
         view_association_label = QLabel("View Association Result :")
@@ -162,9 +163,17 @@ class HopfieldView(QWidget):
         slider_box.addWidget(view_step_label)
         slider_box.addWidget(self.step_slider)
 
+        recog_label = QLabel("Recognition :")
+        recog_label.setAlignment(Qt.AlignCenter)
+        self.recog_text = QLabel(" -- ")
+        self.recog_text.setAlignment(Qt.AlignCenter)
+        recog_box.addWidget(recog_label)
+        recog_box.addWidget(self.recog_text)
+
         vbox.addLayout(hbox, 1)
         vbox.addLayout(self.grid_association_box, 4)
         vbox.addLayout(slider_box, 1)
+        vbox.addLayout(recog_box, 1)
         self.__result_box.setLayout(vbox)
 
     @pyqtSlot()
@@ -182,12 +191,15 @@ class HopfieldView(QWidget):
                 self.number_of_testing_text.setText(" -- ")
                 self.real_dim_text.setText(" -- ")
                 self.dim_text.setText(" -- ")
+                self.recog_text.setText(" -- ")
                 self.view_training_spin.setEnabled(False)
                 self.view_association_spin.setEnabled(False)
                 self.step_slider.setEnabled(False)
                 self.step_slider.setValue(0)
             else:
                 self.hopfield.load_file(self.training_file_name, self.testing_file_name)
+                # start association
+                self.hopfield.start_association()
                 # update file_info
                 self.training_name_text.setText(self.training_file_name)
                 self.testing_name_text.setText(self.testing_file_name)
@@ -195,18 +207,18 @@ class HopfieldView(QWidget):
                 self.number_of_testing_text.setText(str(self.hopfield.num_of_testing))
                 self.real_dim_text.setText(str(self.hopfield.rows) + " * " + str(self.hopfield.cols))
                 self.dim_text.setText(str(self.hopfield.dim) + " * 1")
+                # initialize figure
+                self.__initialize_figure()
                 # update figure part
                 self.view_training_spin.setValue(1)
                 self.view_training_spin.setEnabled(True)
                 self.view_training_spin.setRange(1, self.hopfield.num_of_training)
-                self.view_association_spin.setValue(0)
+                self.view_association_spin.setValue(1)
                 self.view_association_spin.setEnabled(True)
-                self.view_association_spin.setRange(0, self.hopfield.num_of_testing)
+                self.view_association_spin.setRange(1, self.hopfield.num_of_testing)
                 self.step_slider.setValue(0)
-                # start association
-                self.hopfield.start_association()
-                # draw figure
-                self.__initial_figure()
+                self.switch_training_view()
+                self.switch_association_view()
 
     @pyqtSlot()
     def switch_training_view(self):
@@ -219,14 +231,15 @@ class HopfieldView(QWidget):
         target_view = self.view_association_spin.value()
         if target_view != 0:
             self.view_training_spin.setValue(target_view)
+            # draw
             self.__draw_association_view(target_view)
+            # reset slider
             self.step_slider.setValue(0)
             self.step_slider.setRange(0, len(self.hopfield.record[target_view - 1])-1)
-        else:
-            for i in range(self.hopfield.dim):
-                self.association_rects[i].setStyleSheet("background-color: white;")
+            # set recognition
+            self.recog_text.setText(str(support.get_recog(self.hopfield.inputs[target_view - 1], self.hopfield.record[target_view - 1][-1])))
 
-    def __initial_figure(self):
+    def __initialize_figure(self):
         # delete old
         for i in reversed(range(self.grid_training_box.count())): 
             self.grid_training_box.itemAt(i).widget().deleteLater()
@@ -248,8 +261,6 @@ class HopfieldView(QWidget):
                 item2.setEnabled(False)
                 self.grid_association_box.addWidget(item2, i, j)
                 self.association_rects.append(item2)
-
-        self.switch_training_view()
 
 
     def __draw_training_view(self, target):

@@ -13,7 +13,7 @@ def find_testing_dataset():
     list_file = os.listdir('Hopfield_dataSet') 
     txt_file = []
     for f in list_file:
-        if(f.endswith("Testing.txt") or f.endswith("Testing.TXT")):
+        if(f.endswith(".txt")):
             txt_file.append(f)
     return txt_file
 
@@ -30,4 +30,11 @@ def check_file(training_file_name, testing_file_name):
                 error = True
                 break
     return error
+
+def get_recog(trainings, testings):
+    good = 0
+    for train, test in zip(trainings, testings):
+        if train == test:
+            good += 1
+    return round(good/len(trainings), 5)
                     
