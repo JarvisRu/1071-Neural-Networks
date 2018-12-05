@@ -16,6 +16,7 @@ class Hopfield():
         self.weight_matrix = np.array([])
         self.thresolds = np.array([])
         self.record = []
+        self.overallCorrectNum = 0
 
     def load_file(self, training_file_name, testing_file_name):
         self.__refresh()
@@ -95,7 +96,7 @@ class Hopfield():
             tmp = img.reshape(self.dim, 1)
             original_weight += tmp * img
         self.weight_matrix = (1/self.dim) * (original_weight) - (self.num_of_training/self.dim) * np.eye(self.dim, dtype=int)
-
+ 
     def __compute_thresold(self):
         tmp_thresolds = []
         # compute thresold by weight
@@ -103,7 +104,7 @@ class Hopfield():
         #     tmp_thresolds.append(sum(self.weight_matrix[row]))
         # set thresold as fixed value
         for row in range(self.dim):
-            tmp_thresolds.append(0.25)
+            tmp_thresolds.append(0)
         self.thresolds = np.array(tmp_thresolds)
 
     def __create_perceptron(self):
@@ -127,9 +128,13 @@ class Hopfield():
             self.__record_for_print(test, i)
             output = np.copy(test)
 
-            #loop until converge
+            # check if is training set as testing set
+            is_training_set = True if np.all(np.equal(test, self.inputs[i])) else False
+
+            # loop until converge or correct
             is_converge = False
-            while not is_converge:
+            is_correct = False
+            while not is_converge and not is_correct:
                 # compute tmp vector
                 tmp_v = []
                 for row in range(self.dim):
@@ -143,11 +148,31 @@ class Hopfield():
                     elif tmp_v[row] < self.pers[row].thresold:
                         output[row] = -1
                 
-                # try converge condition : output == input
+                # try converge condition : output == input or already correct
                 if np.all(np.equal(test, output)) :
                     is_converge = True
                 else:
                     test = np.copy(output)
+
+                # check for overall recognition
+                if not is_training_set:
+                    if self.__check_recog(output, i):
+                        is_correct = True
+                        self.overallCorrectNum += 1
                     
                 self.__record_for_print(output, i)
             i += 1
+
+        # compute overall recognition for training_set as testing_set (must wait for converge)
+        if is_training_set:
+            for i in range(self.num_of_testing):
+                if self.__check_recog(self.record[i][-1], i):
+                    self.overallCorrectNum += 1
+
+
+    def __check_recog(self, img, source):
+        good = 0
+        for output, origin in zip(img, self.inputs[source]):
+            if output == origin:
+                good += 1
+        return True if round(good/len(img), 5) > 0.95 else False

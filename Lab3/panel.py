@@ -144,13 +144,21 @@ class HopfieldView(QWidget):
         recog_box = QHBoxLayout()
         self.grid_association_box = QGridLayout()
 
+        overall_recog_label = QLabel("Overall Association Recognition :")
+        overall_recog_label.setAlignment(Qt.AlignCenter)
+        overall_recog_label.setStatusTip("Recognition of all testing dataset, it will be classify as correct if recognition is over 95%")
+        self.overall_recog_text = QLabel(" -- ")
+        self.overall_recog_text.setAlignment(Qt.AlignCenter)
         view_association_label = QLabel("View Association Result :")
         view_association_label.setAlignment(Qt.AlignCenter)
+        view_association_label.setStatusTip("Association will stop if recognition over 95%")
         self.view_association_spin = QSpinBox()
         self.view_association_spin.setEnabled(False)
         self.view_association_spin.setValue(0)
         self.view_association_spin.setSingleStep(1)
         self.view_association_spin.valueChanged.connect(self.switch_association_view)
+        hbox.addWidget(overall_recog_label)
+        hbox.addWidget(self.overall_recog_text)
         hbox.addWidget(view_association_label)
         hbox.addWidget(self.view_association_spin)
 
@@ -163,7 +171,7 @@ class HopfieldView(QWidget):
         slider_box.addWidget(view_step_label)
         slider_box.addWidget(self.step_slider)
 
-        recog_label = QLabel("Recognition :")
+        recog_label = QLabel("Recognition(%) :")
         recog_label.setAlignment(Qt.AlignCenter)
         self.recog_text = QLabel(" -- ")
         self.recog_text.setAlignment(Qt.AlignCenter)
@@ -191,6 +199,7 @@ class HopfieldView(QWidget):
                 self.number_of_testing_text.setText(" -- ")
                 self.real_dim_text.setText(" -- ")
                 self.dim_text.setText(" -- ")
+                self.overall_recog_text.setText(" -- ")
                 self.recog_text.setText(" -- ")
                 self.view_training_spin.setEnabled(False)
                 self.view_association_spin.setEnabled(False)
@@ -210,6 +219,7 @@ class HopfieldView(QWidget):
                 # initialize figure
                 self.__initialize_figure()
                 # update figure part
+                self.overall_recog_text.setText(str(self.hopfield.overallCorrectNum) + " / " + str(self.hopfield.num_of_training))
                 self.view_training_spin.setValue(1)
                 self.view_training_spin.setEnabled(True)
                 self.view_training_spin.setRange(1, self.hopfield.num_of_training)
@@ -299,7 +309,7 @@ class HopfieldView(QWidget):
 class BaseWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.resize(770, 520)
+        self.resize(800, 530)
         self.move(350,50)
         self.setWindowTitle('Neural Networks Lab3 - Hopfield')
         self.statusBar()
