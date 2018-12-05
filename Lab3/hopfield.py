@@ -128,13 +128,9 @@ class Hopfield():
             self.__record_for_print(test, i)
             output = np.copy(test)
 
-            # check if is training set as testing set
-            is_training_set = True if np.all(np.equal(test, self.inputs[i])) else False
-
             # loop until converge or correct
             is_converge = False
-            is_correct = False
-            while not is_converge and not is_correct:
+            while not is_converge:
                 # compute tmp vector
                 tmp_v = []
                 for row in range(self.dim):
@@ -148,26 +144,19 @@ class Hopfield():
                     elif tmp_v[row] < self.pers[row].thresold:
                         output[row] = -1
                 
-                # try converge condition : output == input or already correct
+                # try converge condition : output == input
                 if np.all(np.equal(test, output)) :
                     is_converge = True
                 else:
                     test = np.copy(output)
-
-                # check for overall recognition
-                if not is_training_set:
-                    if self.__check_recog(output, i):
-                        is_correct = True
-                        self.overallCorrectNum += 1
                     
                 self.__record_for_print(output, i)
             i += 1
 
-        # compute overall recognition for training_set as testing_set (must wait for converge)
-        if is_training_set:
-            for i in range(self.num_of_testing):
-                if self.__check_recog(self.record[i][-1], i):
-                    self.overallCorrectNum += 1
+        # compute overall recognition
+        for i in range(self.num_of_testing):
+            if self.__check_recog(self.record[i][-1], i):
+                self.overallCorrectNum += 1
 
 
     def __check_recog(self, img, source):
