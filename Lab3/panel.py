@@ -173,7 +173,7 @@ class HopfieldView(QWidget):
         slider_box.addWidget(view_step_label)
         slider_box.addWidget(self.step_slider)
 
-        recog_label = QLabel("Recognition(%) :")
+        recog_label = QLabel("Recognition :")
         recog_label.setAlignment(Qt.AlignCenter)
         recog_label.setStatusTip("Recognition of single instance")
         self.recog_text = QLabel(" -- ")
@@ -230,6 +230,7 @@ class HopfieldView(QWidget):
                 self.view_association_spin.setValue(1)
                 self.view_association_spin.setEnabled(True)
                 self.view_association_spin.setRange(1, self.hopfield.num_of_testing)
+                self.step_slider.setEnabled(True)
                 self.step_slider.setValue(0)
                 self.switch_training_view()
                 self.switch_association_view()
